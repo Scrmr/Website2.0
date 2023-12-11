@@ -1,0 +1,25 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # ... other steps ...
+
+      - name: Build and Deploy
+        run: |
+          npm install
+          npm run build
+          npm run deploy
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PORT: ${{ secrets.PORT || 3000 }} # Use this line if you have a PORT variable
