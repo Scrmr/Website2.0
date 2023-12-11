@@ -47,7 +47,7 @@ function applyCaesarCipherToPoem(poem, shift) {
 
 // Function to generate a poem with the AI
 async function generatePoemWithAI(input) {
-  const structuredPrompt = `Create a quatrain about ${input}, with each line having around 10 syllables. Please format it with each line separated by a new line and up to 80 words in a poem.`;
+  const structuredPrompt = `Create a quatrain about ${input}, with each line having around 10 syllables. Please format it with the appropriate line breaks to maintaint he rhyme.`;
   try {
     const response = await axios.post('https://api.openai.com/v1/engines/gpt-3.5-turbo/completions', {
       prompt: structuredPrompt,
