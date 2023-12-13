@@ -31,6 +31,11 @@
     margin-top: 2rem; /* Adjust this value as needed */
     margin-bottom: 2rem; /* Adjust this value as needed */
 }
+
+.icon-hover:hover {
+  transform: scale(1.05); /* Adjust the scale value as needed */
+  transition: transform 0.3s ease; /* Smooth transition for the transform */
+}
     </style>
 
 </head>
@@ -96,26 +101,55 @@
     <div class="container">
         <div class="row">
             <!-- Left column for icons -->
-            <div class="col-md-2">
-                <a href="philosophy.html" class="d-block mb-3 mt-5">
-                    <img src="images/philosophy.png" alt="Icon 1" class="img-fluid">
-                </a>
-                <a href="caesarpoem.html" class="d-block mb-3">
-                    <img src="images/cypherpoem.png" alt="Icon 2" class="img-fluid">
-                </a>
-                <a href="probability.html" class="d-block mb-3">
-                    <img src="images/probability.png" alt="Icon 3" class="img-fluid">
-                </a>
-                <a href="gofl.html" class="d-block mb-3">
-                    <img src="images/gofl.png" alt="Icon 4" class="img-fluid">
-                </a>
-                <a href="learn.html" class="d-block mb-3">
-                    <img src="images/learn.png" alt="Icon 5" class="img-fluid">
-                </a>
-                <a href="about.html" class="d-block mb-3">
-                    <img src="images/about.png" alt="Icon 6" class="img-fluid">
-                </a>
-            </div>
+            <div class="col-12 col-md-4">
+                <div class="d-block mb-3 mt-5">
+                    <a href="philosophy.html" class="media text-decoration-none">
+                        <img src="images/philosophy.png" alt="Philosophy" class="align-self-center mr-3 img-fluid icon-hover">
+                        <div class="media-body">
+                            <p class="text-dark mb-0">Some of my philosophy essays related to ICTs</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="d-block mb-3">
+                    <a href="caesarpoem.html" class="media text-decoration-none">
+                        <img src="images/cypherpoem.png" alt="Caesar Cipher Poem" class="align-self-center mr-3 img-fluid icon-hover">
+                        <div class="media-body">
+                            <p class="text-dark mb-0">Poem Generator with a twist</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="d-block mb-3">
+                    <a href="probability.html" class="media text-decoration-none">
+                        <img src="images/probability2.png" alt="Probability" class="align-self-center mr-3 img-fluid icon-hover">
+                        <div class="media-body">
+                            <p class="text-dark mb-0">Probability game where an algorithm will try to guess what you'll press next</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="d-block mb-3">
+                    <a href="gofl.html" class="media text-decoration-none">
+                        <img src="images/gofl.png" alt="Game of Finite Life" class="align-self-center mr-3 img-fluid icon-hover">
+                        <div class="media-body">
+                            <p class="text-dark mb-0"></p>
+                        </div>
+                    </a>
+                </div>
+                <div class="d-block mb-3">
+                    <a href="learn.html" class="media text-decoration-none">
+                        <img src="images/learn.png" alt="Learning" class="align-self-center mr-3 img-fluid icon-hover">
+                        <div class="media-body">
+                            <p class="text-dark mb-0">Some resources for learning, as well as cool things I find on the internet</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="d-block mb-3">
+                    <a href="about.html" class="media text-decoration-none">
+                        <img src="images/about.png" alt="About" class="align-self-center mr-3 img-fluid icon-hover">
+                        <div class="media-body">
+                            <p class="text-dark mb-0">Info about me</p>
+                        </div>
+                    </a>
+                </div>
             <!-- Right column for content -->
             <div class="col-md-10">
                 <!-- Content goes here -->
