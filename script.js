@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', (event) => {
+ 
   const wordInput = document.getElementById('word-input');
+ 
   const generateBtn = document.getElementById('generate-btn');
+ 
   const poemContainer = document.getElementById('poem-container');
 
   function validateInput(input) {
