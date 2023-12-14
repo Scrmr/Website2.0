@@ -77,6 +77,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const words = poem.match(/[\w'’]+|[.,!?;"]/g) || []; // Match words and punctuation
 
     words.forEach((word, index) => {
+        // Check if the word starts with a capital letter and is not the first word
+        if (index !== 0 && word.match(/^[A-Z]/)) {
+            poemContainer.appendChild(document.createElement('br'));
+        }
+
         const span = document.createElement('span');
         span.textContent = word + ' ';
         if (encryptedWordIndices.includes(index)) {
@@ -86,16 +91,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
             };
         }
         poemContainer.appendChild(span);
-
-        // Check if the word starts with a capital letter
-        if (word.match(/^[A-Z]/)) {
-            // If it's not the first word, add a line break
-            if (index !== 0) {
-                poemContainer.appendChild(document.createElement('br'));
-            }
-        }
     });
 }
+
 
   
   
