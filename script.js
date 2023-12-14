@@ -72,23 +72,28 @@ document.addEventListener('DOMContentLoaded', (event) => {
   function displayPoem(poem, encryptedWordIndices) {
     poemContainer.innerHTML = ''; // Clear the previous poem
     const words = poem.match(/[\w'’]+|[.,!?;"]/g) || []; // Match words and punctuation
+
     words.forEach((word, index) => {
-      const span = document.createElement('span');
-      span.textContent = word + ' ';
-      if (encryptedWordIndices.includes(index)) { // Check if the word index is in the encrypted indices
-        span.classList.add('encrypted');
-        span.onclick = function() {
-          handleDecryptionAttempt(span, 3); // Use the correct shift value for decryption
-        };
-      }
-      poemContainer.appendChild(span); // Add the word to the poem container
-  
-      // If the word is a punctuation that typically follows a line break, add a line break
-      if (word.match(/[.!?]/) && index !== words.length - 1) {
-        poemContainer.appendChild(document.createElement('br'));
-      }
+        const span = document.createElement('span');
+        span.textContent = word + ' ';
+        if (encryptedWordIndices.includes(index)) {
+            span.classList.add('encrypted');
+            span.onclick = function() {
+                handleDecryptionAttempt(span, 3);
+            };
+        }
+        poemContainer.appendChild(span);
+
+        // Check if the word starts with a capital letter
+        if (word.match(/^[A-Z]/)) {
+            // If it's not the first word, add a line break
+            if (index !== 0) {
+                poemContainer.appendChild(document.createElement('br'));
+            }
+        }
     });
-  }
+}
+
   
   
 });
