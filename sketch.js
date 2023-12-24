@@ -1,11 +1,11 @@
 let grid;
-let cols = 100;
-let rows = 50;
+let cols = 30;
+let rows = 30;
 let cellSize;
 
 function setup() {
-    let canvasWidth = 800; // Adjust as needed
-    let canvasHeight = 320; // Adjust as needed
+    let canvasWidth = 500; // Adjust as needed
+    let canvasHeight = 180; // Adjust as needed
     let canvas = createCanvas(canvasWidth, canvasHeight);
     canvas.parent('canvas-container'); // Parent the canvas to the new div
     cellSize = canvasWidth / cols; // Calculate cell size based on canvas width
