@@ -47,7 +47,7 @@ function applyCaesarCipherToPoem(poem, shift) {
 
 // Function to generate a poem with the AI
 async function generatePoemWithAI(input) {
-  const structuredPrompt = `Write a well structured and formatted poem in four stanzas, each stanza consisting of four lines, it should be about ${input}. Thank you.`;
+  const structuredPrompt = `Write a well structured and formatted poem, it should be about ${input}. Thank you.`;
   try {
     const response = await axios.post('https://api.openai.com/v1/engines/gpt-4/completions', {
       prompt: structuredPrompt,
