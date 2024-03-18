@@ -34,6 +34,8 @@ function caesarCipher(str, shift) {
   }).join('');
 }
 
+console.log('log1', userInput);
+
 // Function to apply Caesar cipher to every 10th word and track encrypted words
 function applyCaesarCipherToPoem(poem, shift) {
   let words = poem.match(/[\w'’]+|[.,!?;"]/g) || [];
@@ -44,6 +46,8 @@ function applyCaesarCipherToPoem(poem, shift) {
   }
   return { cipheredPoem: words.join(' '), encryptedWordIndices };
 }
+
+console.log('log2', userInput);
 
 // Function to generate a poem with the AI
 async function generatePoemWithAI(input) {
@@ -66,6 +70,8 @@ async function generatePoemWithAI(input) {
   }
 }
 
+console.log('log3', userInput);
+
 // Endpoint to generate a poem
 app.post('/generate-poem', async (req, res) => {
   const userInput = req.body.input;
@@ -78,6 +84,8 @@ app.post('/generate-poem', async (req, res) => {
   }
 });
 
+console.log('log4', userInput);
+
 // Function to get the secret from the Secret Manager
 async function getSecret(name) {
   const [version] = await client.accessSecretVersion({
@@ -85,6 +93,8 @@ async function getSecret(name) {
   });
   return version.payload.data.toString('utf8');
 }
+
+console.log('log5', userInput);
 
 // Function to start the server
 async function startServer() {
@@ -95,6 +105,8 @@ async function startServer() {
     console.log(`Server running on port ${PORT}`);
   });
 }
+
+console.log('log6', userInput);
 
 // Start the server and handle any errors
 startServer().catch(err => {
