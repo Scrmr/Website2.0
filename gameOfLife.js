@@ -19,9 +19,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listeners for mouse interactions and color selection
     const speedSlider = document.getElementById('speedSlider');
-
+    const colorPicker1 = document.getElementById('player1Color');
+    const colorPicker2 = document.getElementById('player2Color');
+    
     speedSlider.addEventListener('input', (event) => {
         speed = event.target.value;
+    });
+
+    colorPicker1.addEventListener('input', (event) => {
+        playerColors[0] = event.target.value;
+    });
+
+    colorPicker2.addEventListener('input', (event) => {
+        playerColors[1] = event.target.value;
     });
 
     canvas.addEventListener('mousedown', () => {
@@ -43,14 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('player1Color').addEventListener('input', (event) => {
-        playerColors[0] = event.target.value;
-    });
-
-    document.getElementById('player2Color').addEventListener('input', (event) => {
-        playerColors[1] = event.target.value;
-    });
-
     document.getElementById('startButton').addEventListener('click', () => {
         if (!running) {
             running = true;
@@ -69,15 +71,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function createGrid(rows, cols) {
+        // Initialize the grid with null values representing empty cells
         return new Array(rows).fill(null).map(() => new Array(cols).fill(null));
     }
 
     function drawGrid(grid) {
+        // Clear the canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw the grid based on the cell colors
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const cellColor = grid[row][col];
-                ctx.fillStyle = cellColor ? cellColor : '#fff';
+                ctx.fillStyle = cellColor ? cellColor : '#fff'; // Use white for empty cells
                 ctx.fillRect(col * resolution, row * resolution, resolution, resolution);
                 ctx.strokeRect(col * resolution, row * resolution, resolution, resolution);
             }
