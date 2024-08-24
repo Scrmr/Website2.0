@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let animationId;
     let isMouseDown = false;
     let speed = 200; // Default speed in milliseconds
+    let currentPlayer = 0; // 0 for Player 1, 1 for Player 2
 
     // Player colors
     const playerColors = [
@@ -47,10 +48,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const x = Math.floor(event.offsetX / resolution);
             const y = Math.floor(event.offsetY / resolution);
             if (x >= 0 && x < cols && y >= 0 && y < rows) {
-                grid[y][x] = playerColors[0];  // Set the cell to Player 1's color
+                grid[y][x] = playerColors[currentPlayer];  // Set the cell to the active player's color
                 drawGrid(grid);
             }
         }
+    });
+
+    // Add a button to switch players
+    const switchPlayerButton = document.createElement('button');
+    switchPlayerButton.textContent = 'Switch Player';
+    document.getElementById('controls').appendChild(switchPlayerButton);
+
+    switchPlayerButton.addEventListener('click', () => {
+        currentPlayer = (currentPlayer + 1) % playerColors.length; // Switch between players
+        alert(`It's now Player ${currentPlayer + 1}'s turn!`);
     });
 
     document.getElementById('startButton').addEventListener('click', () => {
