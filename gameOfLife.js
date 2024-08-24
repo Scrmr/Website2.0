@@ -8,6 +8,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let directions = createDirectionGrid(rows, cols);
     let running = false;
     let animationId;
+    let isMouseDown = false;
+
+    canvas.addEventListener('mousedown', () => {
+        isMouseDown = true;
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        isMouseDown = false;
+    });
+
+    canvas.addEventListener('mousemove', (event) => {
+        if (isMouseDown) {
+            const x = Math.floor(event.offsetX / resolution);
+            const y = Math.floor(event.offsetY / resolution);
+            if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                grid[y][x] = 1;  // Set the cell to "alive"
+                drawGrid(grid);
+            }
+        }
+    });
 
     canvas.addEventListener('click', (event) => {
         const x = Math.floor(event.offsetX / resolution);
@@ -39,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createDirectionGrid(rows, cols) {
-        // Each cell direction will be represented as an array of [dy, dx]
         return new Array(rows).fill(null).map(() =>
             new Array(cols).fill(null).map(() => [1, 1])
         );
@@ -67,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const [dy, dx] = directions[row][col];
                 let numNeighbors = 0;
 
-                // Count neighbors
                 for (let i = -1; i < 2; i++) {
                     for (let j = -1; j < 2; j++) {
                         if (i === 0 && j === 0) {
@@ -81,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Apply Game of Life rules
                 if (cell === 1 && numNeighbors < 2) {
                     nextGrid[row][col] = 0;
                 } else if (cell === 1 && numNeighbors > 3) {
@@ -90,20 +107,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     nextGrid[row][col] = 1;
                 }
 
-                // Bounce effect on edges
                 if (cell === 1) {
                     if (row === 0 || row === rows - 1) {
-                        nextDirections[row][col][0] *= -1; // Reverse vertical direction
+                        nextDirections[row][col][0] *= -1;
                     }
                     if (col === 0 || col === cols - 1) {
-                        nextDirections[row][col][1] *= -1; // Reverse horizontal direction
+                        nextDirections[row][col][1] *= -1;
                     }
 
-                    // Move the cell based on its direction
                     const newRow = row + nextDirections[row][col][0];
                     const newCol = col + nextDirections[row][col][1];
 
-                    // If within bounds, move the cell
                     if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
                         nextGrid[newRow][newCol] = 1;
                         nextGrid[row][col] = 0;
