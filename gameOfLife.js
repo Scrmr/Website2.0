@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     let resolution = 10; // Default cell size
-    let rows = 100;
-    let cols = 100;
+    let rows = Math.floor(canvas.height / resolution);
+    let cols = Math.floor(canvas.width / resolution);
     let grid = createGrid(rows, cols);
     let running = false;
     let animationId;
@@ -15,12 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerColors = [
         document.getElementById('player1Color').value, // Player 1 color
         document.getElementById('player2Color').value  // Player 2 color
-        // Add more player colors if needed
     ];
 
     // Event listeners for mouse interactions and color selection
     const speedSlider = document.getElementById('speedSlider');
-    const gridSizeSelect = document.getElementById('gridSizeSelect'); // Grid size selection
+    const gridSizeSelect = document.getElementById('gridSizeSelect');
     const colorPicker1 = document.getElementById('player1Color');
     const colorPicker2 = document.getElementById('player2Color');
     
@@ -64,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Add a button to switch players
     const switchPlayerButton = document.createElement('button');
     switchPlayerButton.textContent = 'Switch Player';
     document.getElementById('controls').appendChild(switchPlayerButton);
@@ -92,15 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function createGrid(rows, cols) {
-        // Initialize the grid with null values representing empty cells
         return new Array(rows).fill(null).map(() => new Array(cols).fill(null));
     }
 
     function drawGrid(grid) {
-        // Clear the canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
         
-        // Draw the grid based on the cell colors
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const cellColor = grid[row][col];
@@ -121,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     let sameColorNeighbors = 0;
                     let differentColorNeighbors = {};
 
-                    // Count neighbors
                     for (let i = -1; i < 2; i++) {
                         for (let j = -1; j < 2; j++) {
                             if (i === 0 && j === 0) continue;
@@ -143,21 +137,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
-                    // Apply standard Game of Life rules for the same color
                     if (sameColorNeighbors < 2 || sameColorNeighbors > 3) {
                         nextGrid[row][col] = null; // Underpopulation or Overpopulation
                     } else if (sameColorNeighbors === 2 || sameColorNeighbors === 3) {
                         nextGrid[row][col] = cellColor; // Survival
                     }
 
-                    // Apply special rule for 3 neighbors of 2 different colors
                     const totalNeighbors = sameColorNeighbors + Object.values(differentColorNeighbors).reduce((a, b) => a + b, 0);
                     if (Object.keys(differentColorNeighbors).length === 2 && totalNeighbors === 3) {
                         const selectedColor = Object.keys(differentColorNeighbors)[Math.floor(Math.random() * 2)];
                         applyRandomPattern(nextGrid, row, col, selectedColor);
                     }
                 } else {
-                    // Reproduction: Handle empty cells
                     let potentialColors = {};
                     for (let i = -1; i < 2; i++) {
                         for (let j = -1; j < 2; j++) {
@@ -176,7 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
-                    // Check if any color has exactly 3 neighbors
                     const reproductionColors = Object.keys(potentialColors).filter(color => potentialColors[color] === 3);
                     if (reproductionColors.length === 1) {
                         nextGrid[row][col] = reproductionColors[0]; // Reproduction with one color
@@ -211,13 +201,11 @@ document.addEventListener('DOMContentLoaded', () => {
             grid = updateGrid(grid);
             drawGrid(grid);
 
-            // Introduce a delay based on the slider value before the next animation frame
             setTimeout(() => {
                 requestAnimationFrame(animate);
             }, speed);
         }
     }
 
-    // Initial draw of the grid
-    drawGrid(grid);
+    drawGrid(grid); // Initial draw of the grid
 });
