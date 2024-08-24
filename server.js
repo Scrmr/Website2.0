@@ -87,14 +87,14 @@ app.post('/generate-poem', async (req, res) => {
 console.log('log4', userInput);
 
 // Function to get the secret from the Secret Manager
-async function getSecret(name) {
+async function getSecret(secretName) {
   const [version] = await client.accessSecretVersion({
-    name: `projects/cypherpoem/secrets/${name}/versions/latest`,
+    name: `projects/1039308416541/secrets/${secretName}/versions/latest`,
   });
   return version.payload.data.toString('utf8');
 }
 
-console.log('log5', userInput);
+
 
 // Function to start the server
 async function startServer() {
