@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (brushX >= 0 && brushX < cols && brushY >= 0 && brushY < rows) {
                     if (brushSize === 10 || brushSize === 20) {
                         // For 10x10 or 20x20 brushes, fill only 50% of the cells
-                        if (Math.random() < 0.4) {
+                        if (Math.random() < 0.5) {
                             grid[brushY][brushX] = playerColors[currentPlayer];
                             updatedCells.push({ x: brushX, y: brushY, color: playerColors[currentPlayer] });
                         }
@@ -216,12 +216,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
-                    const reproductionColors = Object.keys(potentialColors).filter(color => potentialColors[color] === 3);
-                    if (reproductionColors.length === 1) {
-                        nextGrid[row][col] = reproductionColors[0]; // Reproduction with one color
-                    } else if (reproductionColors.length === 2) {
+                    const reproductionColors = Object.keys(potentialColors).filter(color => potentialColors[color] === 2 || potentialColors[color] === 3);
+                    if (reproductionColors.length > 0) {
                         const selectedColor = reproductionColors[Math.floor(Math.random() * reproductionColors.length)];
-                        applyRandomPattern(nextGrid, row, col, selectedColor);
+                        nextGrid[row][col] = selectedColor; // Reproduction with one color
                     }
                 }
             }

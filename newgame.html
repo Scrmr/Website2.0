@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Two Player Game of Life</title>
+    <title>New Game of Life Variant</title>
+
+    <button onclick="window.location.href='gofl.html';">Go to Original Game</button>
+
     <style>
         body {
             display: flex;
@@ -17,7 +20,7 @@
         #gameCanvas {
             background-color: #fff;
             border: 1px solid #000;
-            cursor: crosshair; /* Default cursor style */
+            cursor: crosshair;
         }
         button, label, input[type=range], input[type=color], select {
             margin: 10px;
@@ -30,12 +33,10 @@
     </style>
 </head>
 <body>
-    <button onclick="window.location.href='newgame.html';">Go to New Game</button>
-
     <canvas id="gameCanvas" width="1000" height="1000"></canvas> <!-- Larger canvas size -->
     <div id="controls">
-        <button id="startButton">Start Game of Life</button>
-        <button id="stopButton">Stop Game of Life</button>
+        <button id="startButton">Start Game</button>
+        <button id="stopButton">Stop Game</button>
         <button id="resetButton">Reset Grid</button>
         <label for="speedSlider">Speed:</label>
         <input type="range" id="speedSlider" min="50" max="1000" value="200">
@@ -51,14 +52,15 @@
             <option value="3">3x3</option>
             <option value="5">5x5</option>
             <option value="10">10x10 (Random 50%)</option>
-    <option value="20">20x20 (Random 50%)</option>
+            <option value="20">20x20 (Random 50%)</option>
         </select>
         <label for="player1Color">Player 1 Color:</label>
         <input type="color" id="player1Color" value="#ff0000"> <!-- Red -->
         <label for="player2Color">Player 2 Color:</label>
         <input type="color" id="player2Color" value="#0000ff"> <!-- Blue -->
-        <!-- Add more players here if needed -->
+        <!-- Link back to the original game -->
+        <button onclick="window.location.href='gofl.html';">Go to Original Game</button>
     </div>
-    <script src="gameOfLife.js"></script>
+    <script src="newgame.js"></script> <!-- Link to the new game script -->
 </body>
 </html>
