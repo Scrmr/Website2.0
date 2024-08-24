@@ -18,7 +18,7 @@
             background-color: #fff;
             border: 1px solid #000;
         }
-        button, label, input[type=range], input[type=color] {
+        button, label, input[type=range], input[type=color], select {
             margin: 10px;
         }
         #controls {
@@ -31,13 +31,17 @@
 <body>
     <canvas id="gameCanvas" width="1000" height="1000"></canvas> <!-- Larger canvas size -->
     <div id="controls">
-        <label for="cellSizeSlider">Cell Size:</label>
-        <input type="range" id="cellSizeSlider" min="2000" max="200000000" value="10"> <!-- Cell size slider -->
         <button id="startButton">Start Game of Life</button>
         <button id="stopButton">Stop Game of Life</button>
         <button id="resetButton">Reset Grid</button>
         <label for="speedSlider">Speed:</label>
         <input type="range" id="speedSlider" min="50" max="1000" value="200">
+        <label for="gridSizeSelect">Grid Size:</label>
+        <select id="gridSizeSelect">
+            <option value="10">Small (100x100)</option>
+            <option value="5">Medium (200x200)</option>
+            <option value="3">Large (333x333)</option>
+        </select>
         <label for="player1Color">Player 1 Color:</label>
         <input type="color" id="player1Color" value="#ff0000"> <!-- Red -->
         <label for="player2Color">Player 2 Color:</label>
