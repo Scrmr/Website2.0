@@ -141,9 +141,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Apply special rule for 3 neighbors of 2 different colors
-                    const uniqueColors = Object.keys(differentColorNeighbors);
-                    if (sameColorNeighbors === 0 && uniqueColors.length === 2) {
-                        const selectedColor = uniqueColors[Math.floor(Math.random() * uniqueColors.length)];
+                    const totalNeighbors = sameColorNeighbors + Object.values(differentColorNeighbors).reduce((a, b) => a + b, 0);
+                    if (Object.keys(differentColorNeighbors).length === 2 && totalNeighbors === 3) {
+                        const selectedColor = Object.keys(differentColorNeighbors)[Math.floor(Math.random() * 2)];
                         applyRandomPattern(nextGrid, row, col, selectedColor);
                     }
                 } else {
