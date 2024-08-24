@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextGrid = grid.map(arr => [...arr]);
         const nextDirections = directions.map(arr => arr.map(dir => [...dir]));
 
-        // Apply Game of Life rules first
+        // Step 1: Apply Game of Life rules to calculate the next state of the grid
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const cell = grid[row][col];
@@ -104,10 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (cell === 0 && numNeighbors === 3) {
                     nextGrid[row][col] = 1; // Reproduction
                 }
+                // Live cells with 2 or 3 neighbors remain unchanged
             }
         }
 
-        // Apply bounce effect after applying Game of Life rules
+        // Step 2: Apply bounce effect after determining the next state
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 if (nextGrid[row][col] === 1) { // Only consider live cells for bouncing
