@@ -18,7 +18,7 @@
             background-color: #fff;
             border: 1px solid #000;
         }
-        button, label, input[type=range] {
+        button, label, input[type=range], input[type=color] {
             margin: 10px;
         }
         #controls {
@@ -36,6 +36,8 @@
         <button id="resetButton">Reset Grid</button>
         <label for="speedSlider">Speed:</label>
         <input type="range" id="speedSlider" min="50" max="1000" value="200">
+        <label for="colorPicker">Choose Color:</label>
+        <input type="color" id="colorPicker" value="#000000">
     </div>
     <script src="gameOfLife.js"></script>
 </body>

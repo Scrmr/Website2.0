@@ -9,11 +9,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let animationId;
     let isMouseDown = false;
     let speed = 200; // Default speed in milliseconds
+    let cellColor = '#000000'; // Default color
 
-    // Event listeners for mouse interactions
+    // Event listeners for mouse interactions and color selection
     const speedSlider = document.getElementById('speedSlider');
+    const colorPicker = document.getElementById('colorPicker');
+    
     speedSlider.addEventListener('input', (event) => {
         speed = event.target.value;
+    });
+
+    colorPicker.addEventListener('input', (event) => {
+        cellColor = event.target.value;
     });
 
     canvas.addEventListener('mousedown', () => {
@@ -61,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const cell = grid[row][col];
-                ctx.fillStyle = cell ? '#000' : '#fff';
+                ctx.fillStyle = cell ? cellColor : '#fff';
                 ctx.fillRect(col * resolution, row * resolution, resolution, resolution);
                 ctx.strokeRect(col * resolution, row * resolution, resolution, resolution);
             }
