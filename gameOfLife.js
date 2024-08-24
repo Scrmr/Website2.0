@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const rows = 50;
-    const cols = 50;
-    const resolution = 10;
+    let resolution = 10; // Default cell size, will be adjustable
+    const rows = 100; // Increase the grid size
+    const cols = 100;
     let grid = createGrid(rows, cols);
     let running = false;
     let animationId;
@@ -20,11 +20,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listeners for mouse interactions and color selection
     const speedSlider = document.getElementById('speedSlider');
+    const cellSizeSlider = document.getElementById('cellSizeSlider'); // Cell size slider
     const colorPicker1 = document.getElementById('player1Color');
     const colorPicker2 = document.getElementById('player2Color');
     
     speedSlider.addEventListener('input', (event) => {
         speed = event.target.value;
+    });
+
+    cellSizeSlider.addEventListener('input', (event) => {
+        resolution = parseInt(event.target.value);
+        drawGrid(grid); // Redraw the grid with the new cell size
     });
 
     colorPicker1.addEventListener('input', (event) => {
