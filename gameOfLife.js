@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const cols = 50;
     const resolution = 10;
     let grid = createGrid(rows, cols);
-    let directions = createDirectionGrid(rows, cols);
     let running = false;
     let animationId;
     let isMouseDown = false;
@@ -50,18 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('resetButton').addEventListener('click', () => {
         grid = createGrid(rows, cols);
-        directions = createDirectionGrid(rows, cols);
         drawGrid(grid);
     });
 
     function createGrid(rows, cols) {
         return new Array(rows).fill(null).map(() => new Array(cols).fill(0));
-    }
-
-    function createDirectionGrid(rows, cols) {
-        return new Array(rows).fill(null).map(() =>
-            new Array(cols).fill(null).map(() => [1, 1])
-        );
     }
 
     function drawGrid(grid) {
@@ -76,11 +68,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateGrid(grid, directions) {
+    function updateGrid(grid) {
         const nextGrid = grid.map(arr => [...arr]);
-        const nextDirections = directions.map(arr => arr.map(dir => [...dir]));
 
-        // Step 1: Apply Game of Life rules to calculate the next state of the grid
+        // Apply Game of Life rules
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const cell = grid[row][col];
@@ -108,37 +99,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Step 2: Apply bounce effect after determining the next state
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
-                if (nextGrid[row][col] === 1) { // Only consider live cells for bouncing
-                    if (row === 0 || row === rows - 1) {
-                        nextDirections[row][col][0] *= -1; // Reverse vertical direction
-                    }
-                    if (col === 0 || col === cols - 1) {
-                        nextDirections[row][col][1] *= -1; // Reverse horizontal direction
-                    }
-
-                    const newRow = row + nextDirections[row][col][0];
-                    const newCol = col + nextDirections[row][col][1];
-
-                    // If the cell can move, move it; otherwise, leave it where it is
-                    if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
-                        nextGrid[newRow][newCol] = 1;
-                        if (newRow !== row || newCol !== col) {
-                            nextGrid[row][col] = 0;
-                        }
-                    }
-                }
-            }
-        }
-
-        return [nextGrid, nextDirections];
+        return nextGrid;
     }
 
     function animate() {
         if (running) {
-            [grid, directions] = updateGrid(grid, directions);
+            grid = updateGrid(grid);
             drawGrid(grid);
 
             // Introduce a delay based on the slider value before the next animation frame
