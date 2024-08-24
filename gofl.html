@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game of Life</title>
+    <title>Two Player Game of Life</title>
     <style>
         body {
             display: flex;
@@ -36,8 +36,11 @@
         <button id="resetButton">Reset Grid</button>
         <label for="speedSlider">Speed:</label>
         <input type="range" id="speedSlider" min="50" max="1000" value="200">
-        <label for="colorPicker">Choose Color:</label>
-        <input type="color" id="colorPicker" value="#000000">
+        <label for="player1Color">Player 1 Color:</label>
+        <input type="color" id="player1Color" value="#ff0000"> <!-- Red -->
+        <label for="player2Color">Player 2 Color:</label>
+        <input type="color" id="player2Color" value="#0000ff"> <!-- Blue -->
+        <!-- Add more players here if needed -->
     </div>
     <script src="gameOfLife.js"></script>
 </body>

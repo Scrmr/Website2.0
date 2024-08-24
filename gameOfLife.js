@@ -9,18 +9,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let animationId;
     let isMouseDown = false;
     let speed = 200; // Default speed in milliseconds
-    let cellColor = '#000000'; // Default color
+
+    // Player colors
+    const playerColors = [
+        document.getElementById('player1Color').value, // Player 1 color
+        document.getElementById('player2Color').value  // Player 2 color
+        // Add more player colors if needed
+    ];
 
     // Event listeners for mouse interactions and color selection
     const speedSlider = document.getElementById('speedSlider');
-    const colorPicker = document.getElementById('colorPicker');
-    
+
     speedSlider.addEventListener('input', (event) => {
         speed = event.target.value;
-    });
-
-    colorPicker.addEventListener('input', (event) => {
-        cellColor = event.target.value;
     });
 
     canvas.addEventListener('mousedown', () => {
@@ -36,10 +37,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const x = Math.floor(event.offsetX / resolution);
             const y = Math.floor(event.offsetY / resolution);
             if (x >= 0 && x < cols && y >= 0 && y < rows) {
-                grid[y][x] = 1;  // Set the cell to "alive"
+                grid[y][x] = playerColors[0];  // Set the cell to Player 1's color
                 drawGrid(grid);
             }
         }
+    });
+
+    document.getElementById('player1Color').addEventListener('input', (event) => {
+        playerColors[0] = event.target.value;
+    });
+
+    document.getElementById('player2Color').addEventListener('input', (event) => {
+        playerColors[1] = event.target.value;
     });
 
     document.getElementById('startButton').addEventListener('click', () => {
@@ -60,15 +69,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function createGrid(rows, cols) {
-        return new Array(rows).fill(null).map(() => new Array(cols).fill(0));
+        return new Array(rows).fill(null).map(() => new Array(cols).fill(null));
     }
 
     function drawGrid(grid) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                const cell = grid[row][col];
-                ctx.fillStyle = cell ? cellColor : '#fff';
+                const cellColor = grid[row][col];
+                ctx.fillStyle = cellColor ? cellColor : '#fff';
                 ctx.fillRect(col * resolution, row * resolution, resolution, resolution);
                 ctx.strokeRect(col * resolution, row * resolution, resolution, resolution);
             }
@@ -76,37 +85,98 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateGrid(grid) {
-        const nextGrid = grid.map(arr => [...arr]);
+        const nextGrid = createGrid(rows, cols);
 
-        // Apply Game of Life rules
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                const cell = grid[row][col];
-                let numNeighbors = 0;
+                const cellColor = grid[row][col];
+                if (cellColor) {
+                    let sameColorNeighbors = 0;
+                    let differentColorNeighbors = {};
 
-                // Count neighbors
-                for (let i = -1; i < 2; i++) {
-                    for (let j = -1; j < 2; j++) {
-                        if (i === 0 && j === 0) continue;
-                        const x = col + j;
-                        const y = row + i;
-                        if (x >= 0 && x < cols && y >= 0 && y < rows) {
-                            numNeighbors += grid[y][x];
+                    // Count neighbors
+                    for (let i = -1; i < 2; i++) {
+                        for (let j = -1; j < 2; j++) {
+                            if (i === 0 && j === 0) continue;
+                            const x = col + j;
+                            const y = row + i;
+                            if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                                const neighborColor = grid[y][x];
+                                if (neighborColor) {
+                                    if (neighborColor === cellColor) {
+                                        sameColorNeighbors++;
+                                    } else {
+                                        if (!differentColorNeighbors[neighborColor]) {
+                                            differentColorNeighbors[neighborColor] = 0;
+                                        }
+                                        differentColorNeighbors[neighborColor]++;
+                                    }
+                                }
+                            }
                         }
                     }
-                }
 
-                // Apply Game of Life rules
-                if (cell === 1 && (numNeighbors < 2 || numNeighbors > 3)) {
-                    nextGrid[row][col] = 0; // Underpopulation or Overpopulation
-                } else if (cell === 0 && numNeighbors === 3) {
-                    nextGrid[row][col] = 1; // Reproduction
+                    // Apply standard Game of Life rules for the same color
+                    if (sameColorNeighbors < 2 || sameColorNeighbors > 3) {
+                        nextGrid[row][col] = null; // Underpopulation or Overpopulation
+                    } else if (sameColorNeighbors === 2 || sameColorNeighbors === 3) {
+                        nextGrid[row][col] = cellColor; // Survival
+                    }
+
+                    // Apply special rule for 3 neighbors of 2 different colors
+                    const uniqueColors = Object.keys(differentColorNeighbors);
+                    if (sameColorNeighbors === 0 && uniqueColors.length === 2) {
+                        const selectedColor = uniqueColors[Math.floor(Math.random() * uniqueColors.length)];
+                        applyRandomPattern(nextGrid, row, col, selectedColor);
+                    }
+                } else {
+                    // Reproduction: Handle empty cells
+                    let potentialColors = {};
+                    for (let i = -1; i < 2; i++) {
+                        for (let j = -1; j < 2; j++) {
+                            if (i === 0 && j === 0) continue;
+                            const x = col + j;
+                            const y = row + i;
+                            if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                                const neighborColor = grid[y][x];
+                                if (neighborColor) {
+                                    if (!potentialColors[neighborColor]) {
+                                        potentialColors[neighborColor] = 0;
+                                    }
+                                    potentialColors[neighborColor]++;
+                                }
+                            }
+                        }
+                    }
+
+                    // Check if any color has exactly 3 neighbors
+                    const reproductionColors = Object.keys(potentialColors).filter(color => potentialColors[color] === 3);
+                    if (reproductionColors.length === 1) {
+                        nextGrid[row][col] = reproductionColors[0]; // Reproduction with one color
+                    } else if (reproductionColors.length === 2) {
+                        const selectedColor = reproductionColors[Math.floor(Math.random() * reproductionColors.length)];
+                        applyRandomPattern(nextGrid, row, col, selectedColor);
+                    }
                 }
-                // Live cells with 2 or 3 neighbors remain unchanged
             }
         }
 
         return nextGrid;
+    }
+
+    function applyRandomPattern(grid, row, col, color) {
+        const patternSize = 9;
+        const startRow = Math.max(0, row - Math.floor(patternSize / 2));
+        const startCol = Math.max(0, col - Math.floor(patternSize / 2));
+        for (let i = 0; i < patternSize; i++) {
+            for (let j = 0; j < patternSize; j++) {
+                const targetRow = startRow + i;
+                const targetCol = startCol + j;
+                if (targetRow < rows && targetCol < cols && Math.random() < 0.5) {
+                    grid[targetRow][targetCol] = color;
+                }
+            }
+        }
     }
 
     function animate() {
