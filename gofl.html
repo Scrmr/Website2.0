@@ -7,8 +7,9 @@
     <style>
         body {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             height: 100vh;
             margin: 0;
             background-color: #333;
@@ -17,17 +18,25 @@
             background-color: #fff;
             border: 1px solid #000;
         }
-        button {
-            display: block;
-            margin: 10px auto;
+        button, label, input[type=range] {
+            margin: 10px;
+        }
+        #controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="500" height="500"></canvas>
-    <button id="startButton">Start Game of Life</button>
-    <button id="stopButton">Stop Game of Life</button>
-    <button id="resetButton">Reset Grid</button>
+    <div id="controls">
+        <button id="startButton">Start Game of Life</button>
+        <button id="stopButton">Stop Game of Life</button>
+        <button id="resetButton">Reset Grid</button>
+        <label for="speedSlider">Speed:</label>
+        <input type="range" id="speedSlider" min="50" max="1000" value="200">
+    </div>
     <script src="gameOfLife.js"></script>
 </body>
 </html>

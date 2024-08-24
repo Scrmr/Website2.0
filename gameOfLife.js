@@ -104,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (cell === 0 && numNeighbors === 3) {
                     nextGrid[row][col] = 1; // Reproduction
                 }
-                // Cells with exactly 2 or 3 neighbors and alive remain unchanged
             }
         }
 
@@ -148,5 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Initial draw of the grid
     drawGrid(grid);
 });
