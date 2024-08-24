@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let running = false;
     let animationId;
     let isMouseDown = false;
+    let speed = 200; // Default speed in milliseconds
+
+    // Event listeners for mouse interactions
+    const speedSlider = document.getElementById('speedSlider');
+    speedSlider.addEventListener('input', (event) => {
+        speed = event.target.value;
+    });
 
     canvas.addEventListener('mousedown', () => {
         isMouseDown = true;
@@ -27,13 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 drawGrid(grid);
             }
         }
-    });
-
-    canvas.addEventListener('click', (event) => {
-        const x = Math.floor(event.offsetX / resolution);
-        const y = Math.floor(event.offsetY / resolution);
-        grid[y][x] = grid[y][x] ? 0 : 1;
-        drawGrid(grid);
     });
 
     document.getElementById('startButton').addEventListener('click', () => {
@@ -79,19 +79,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateGrid(grid, directions) {
         const nextGrid = grid.map(arr => [...arr]);
         const nextDirections = directions.map(arr => arr.map(dir => [...dir]));
-    
-        // First, apply Game of Life rules
+
+        // Apply Game of Life rules first
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const cell = grid[row][col];
                 let numNeighbors = 0;
-    
+
                 // Count neighbors
                 for (let i = -1; i < 2; i++) {
                     for (let j = -1; j < 2; j++) {
-                        if (i === 0 && j === 0) {
-                            continue;
-                        }
+                        if (i === 0 && j === 0) continue;
                         const x = col + j;
                         const y = row + i;
                         if (x >= 0 && x < cols && y >= 0 && y < rows) {
@@ -99,50 +97,54 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
-    
+
                 // Apply Game of Life rules
                 if (cell === 1 && (numNeighbors < 2 || numNeighbors > 3)) {
                     nextGrid[row][col] = 0; // Underpopulation or Overpopulation
                 } else if (cell === 0 && numNeighbors === 3) {
                     nextGrid[row][col] = 1; // Reproduction
                 }
-                // Cells with exactly 2 or 3 neighbors remain unchanged
+                // Cells with exactly 2 or 3 neighbors and alive remain unchanged
             }
         }
-    
-        // Then, apply the bounce effect to the cells that are alive
+
+        // Apply bounce effect after applying Game of Life rules
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                if (nextGrid[row][col] === 1) { // Only move live cells
-                    const [dy, dx] = nextDirections[row][col];
-    
+                if (nextGrid[row][col] === 1) { // Only consider live cells for bouncing
                     if (row === 0 || row === rows - 1) {
                         nextDirections[row][col][0] *= -1; // Reverse vertical direction
                     }
                     if (col === 0 || col === cols - 1) {
                         nextDirections[row][col][1] *= -1; // Reverse horizontal direction
                     }
-    
+
                     const newRow = row + nextDirections[row][col][0];
                     const newCol = col + nextDirections[row][col][1];
-    
+
+                    // If the cell can move, move it; otherwise, leave it where it is
                     if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
                         nextGrid[newRow][newCol] = 1;
-                        nextGrid[row][col] = 0;
+                        if (newRow !== row || newCol !== col) {
+                            nextGrid[row][col] = 0;
+                        }
                     }
                 }
             }
         }
-    
+
         return [nextGrid, nextDirections];
     }
-    
 
     function animate() {
-        [grid, directions] = updateGrid(grid, directions);
-        drawGrid(grid);
         if (running) {
-            animationId = requestAnimationFrame(animate);
+            [grid, directions] = updateGrid(grid, directions);
+            drawGrid(grid);
+
+            // Introduce a delay based on the slider value before the next animation frame
+            setTimeout(() => {
+                requestAnimationFrame(animate);
+            }, speed);
         }
     }
 
