@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let animationId;
     let isMouseDown = false;
     let speed = 200; // Default speed in milliseconds
+    const bounceStep = 2; // Change this to 2 or 3 for different bounce distances
 
     // Event listeners for mouse interactions
     const speedSlider = document.getElementById('speedSlider');
@@ -119,10 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         nextDirections[row][col][1] *= -1; // Reverse horizontal direction
                     }
 
-                    const newRow = row + nextDirections[row][col][0];
-                    const newCol = col + nextDirections[row][col][1];
+                    const newRow = row + nextDirections[row][col][0] * bounceStep;
+                    const newCol = col + nextDirections[row][col][1] * bounceStep;
 
-                    // If the cell can move, move it; otherwise, leave it where it is
+                    // Ensure the movement stays within grid bounds
                     if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
                         nextGrid[newRow][newCol] = 1;
                         if (newRow !== row || newCol !== col) {
