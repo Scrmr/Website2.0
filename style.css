@@ -2,12 +2,17 @@ body {
     font-family: Arial, sans-serif;
     text-align: center;
     background-image: url('images/background.webp');
-    background-repeat: no-repeat; /* Prevents the image from repeating */
-  background-position: center center; /* Centers the image horizontally and vertically */
-  background-size: cover; /* Scales the image to cover the entire element */
-  /* Additional properties for better control */
-  background-attachment: fixed; /* Keeps the image fixed when scrolling */
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    background-attachment: fixed;
     margin-top: 50px;
+}
+
+.game-title {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: white; /* Makes the game title text white */
 }
 
 .iceberg {
@@ -23,23 +28,70 @@ body {
     bottom: 0;
     left: 50%;
     transform: translateX(-50%) translateX(10px); /* Shift right by 10px */
-    width: 60px; /* Width of the penguin container */
-    height: 60px; /* Height of the penguin container */
-    background-image: url('images/penguinleft.png'); /* Initial image set to 'left' */
+    width: 60px;
+    height: 60px;
+    background-image: url('images/penguinleft.png');
     background-repeat: no-repeat;
-    background-size: contain; /* Resize the image to fit completely */
-    background-position: center; /* Center the image within the container */
+    background-size: contain;
+    background-position: center;
     transition: bottom 0.3s;
 }
 
-
-.status {
+.button-container {
+    display: flex;
+    justify-content: center;
     margin-top: 20px;
-    font-size: 1.2em;
 }
 
 button {
     padding: 10px 20px;
     font-size: 1.2em;
-    margin: 10px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 8px;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+.status {
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: white; /* Ensures the status text is white */
+}
+
+/* Media Query for Mobile Devices */
+@media (max-width: 768px) {
+    body {
+        margin-top: 20px;
+        padding: 10px;
+    }
+
+    .game-title {
+        font-size: 1.5rem; /* Smaller font size for mobile */
+    }
+
+    .iceberg {
+        width: 40px; /* Smaller iceberg for mobile */
+        height: 400px;
+    }
+
+    .penguin {
+        width: 40px; /* Adjust penguin size for smaller screens */
+        height: 40px;
+    }
+
+    button {
+        padding: 8px 16px; /* Smaller buttons for mobile */
+        font-size: 1rem;
+    }
+
+    .status {
+        font-size: 1rem; /* Adjusted font size for status */
+    }
 }

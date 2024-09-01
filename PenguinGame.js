@@ -132,7 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listeners for buttons
     leftFootBtn.addEventListener('click', () => makeMove('left'));
-    rightFootBtn.addEventListener('click', () => makeMove('right'));
+rightFootBtn.addEventListener('click', () => makeMove('right'));
+
+leftFootBtn.addEventListener('touchstart', () => makeMove('left'));
+rightFootBtn.addEventListener('touchstart', () => makeMove('right'));
+
+
+
 
     // Adding keyboard controls
     document.addEventListener('keydown', (event) => {
