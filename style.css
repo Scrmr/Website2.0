@@ -12,7 +12,7 @@ body {
 .game-title {
     font-size: 2rem;
     margin-bottom: 20px;
-    color: white; /* Makes the game title text white */
+    color: white;
 }
 
 .iceberg {
@@ -62,7 +62,7 @@ button:hover {
 .status {
     margin-top: 20px;
     font-size: 1.2em;
-    color: white; /* Ensures the status text is white */
+    color: white;
 }
 
 /* Media Query for Mobile Devices */
@@ -73,25 +73,26 @@ button:hover {
     }
 
     .game-title {
-        font-size: 1.5rem; /* Smaller font size for mobile */
+        font-size: 1.5rem;
     }
 
     .iceberg {
-        width: 40px; /* Smaller iceberg for mobile */
-        height: 400px;
+        width: 40px;
+        height: 300px; /* Smaller height for mobile */
     }
 
     .penguin {
-        width: 40px; /* Adjust penguin size for smaller screens */
+        width: 40px;
         height: 40px;
+        bottom: 10px; /* Ensures the penguin is always visible */
     }
 
     button {
-        padding: 8px 16px; /* Smaller buttons for mobile */
+        padding: 8px 16px;
         font-size: 1rem;
     }
 
     .status {
-        font-size: 1rem; /* Adjusted font size for status */
+        font-size: 1rem;
     }
 }
