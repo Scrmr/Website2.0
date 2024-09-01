@@ -1,13 +1,19 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
+    background-image: url('images/background.webp');
+    background-repeat: no-repeat; /* Prevents the image from repeating */
+  background-position: center center; /* Centers the image horizontally and vertically */
+  background-size: cover; /* Scales the image to cover the entire element */
+  /* Additional properties for better control */
+  background-attachment: fixed; /* Keeps the image fixed when scrolling */
     margin-top: 50px;
 }
 
 .iceberg {
     width: 50px;
     height: 500px;
-    background-color: #ADD8E6;
+    background-color: #add8e600;
     margin: 0 auto 20px;
     position: relative;
 }
@@ -16,15 +22,16 @@ body {
     position: absolute;
     bottom: 0;
     left: 50%;
-    transform: translateX(-50%);
-    width: 50px; /* Width of the penguin container */
-    height: 50px; /* Height of the penguin container */
+    transform: translateX(-50%) translateX(10px); /* Shift right by 10px */
+    width: 60px; /* Width of the penguin container */
+    height: 60px; /* Height of the penguin container */
     background-image: url('images/penguinleft.png'); /* Initial image set to 'left' */
     background-repeat: no-repeat;
     background-size: contain; /* Resize the image to fit completely */
     background-position: center; /* Center the image within the container */
     transition: bottom 0.3s;
 }
+
 
 .status {
     margin-top: 20px;
