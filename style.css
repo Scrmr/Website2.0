@@ -1,12 +1,23 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background-image: url('images/background.webp');
     background-repeat: no-repeat;
     background-position: center center;
     background-size: cover;
     background-attachment: fixed;
+    overflow: hidden; /* Prevent scrollbars if the video overflows */
     margin-top: 50px;
+}
+
+
+#background-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1; /* Ensure the video is behind all other content */
+    object-fit: cover; /* Make the video cover the whole area */
 }
 
 .game-title {
