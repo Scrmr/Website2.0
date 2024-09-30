@@ -1,0 +1,39 @@
+/* Reset default margins and paddings */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Body Styling */
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Full viewport height */
+    background-color: #000; /* Black background */
+    overflow: hidden; /* Hide scrollbars */
+  }
+  
+  /* Game Container Styling */
+  #game-container {
+    width: 500px;
+    height: 500px;
+    position: relative;
+    border: 2px solid #fff; /* White border */
+  }
+  
+  /* Game Over Overlay */
+  #game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 32px;
+    text-align: center;
+    display: none; /* Hidden by default */
+    z-index: 10;
+    pointer-events: none;
+  }
+  

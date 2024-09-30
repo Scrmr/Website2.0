@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Space Platformer</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <button id="start-button">Start Game</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+    <script>
+        document.getElementById('start-button').addEventListener('click', function() {
+            document.getElementById('start-button').style.display = 'none'; // Hide the button
+            startGame(); // Start the game after user input
+        });
+
+        function startGame() {
+            // Move your Phaser game initialization code here
+            const config = {
+                type: Phaser.AUTO,
+                width: 800,
+                height: 600,
+                physics: {
+                    default: 'arcade',
+                    arcade: {
+                        gravity: { y: 800 },
+                        debug: false,
+                    },
+                },
+                scene: {
+                    preload: preload,
+                    create: create,
+                    update: update,
+                },
+            };
+
+            const game = new Phaser.Game(config);
+        }
+    </script>
+    <script src="game.js"></script>
+</body>
+</html>

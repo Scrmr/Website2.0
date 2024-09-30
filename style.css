@@ -29,9 +29,10 @@ body {
 .iceberg {
     width: 50px;
     height: 500px;
-    background-color: #add8e600;
+    background-color: #add8e6;
     margin: 0 auto 20px;
     position: relative;
+    z-index: 1;
 }
 
 .penguin {

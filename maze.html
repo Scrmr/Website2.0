@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maze Game</title>
+  <!-- Include p5.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #000;
+    }
+    #game-container {
+      width: 500px;
+      height: 500px;
+      position: relative;
+      border: 2px solid #fff;
+      overflow: hidden;
+    }
+    .player, .ghost {
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      border-radius: 50%;
+    }
+    .player {
+      background-color: #00ff00;
+    }
+    .ghost {
+      background-color: #ff0000;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container"></div>
+  <script>
+    const playerSpeed = 2;
+    const ghostSpeed = 1.5;
+    let player, ghost, maze;
+
+    function setup() {
+      createCanvas(500, 500).parent('game-container');
+      player = createVector(30, 30);
+      ghost = createVector(470, 470);
+      maze = createMaze(20, 20, 25, 25);
+    }
+
+    function draw() {
+      background(0);
+      drawMaze();
+      drawPlayer();
+      drawGhost();
+      moveGhost();
+      checkGameOver();
+    }
+
+    function createMaze(rows, cols, cellWidth, cellHeight) {
+      let maze = [];
+      for (let i = 0; i < rows; i++) {
+        maze[i] = [];
+        for (let j = 0; j < cols; j++) {
+          maze[i][j] = Math.random() > 0.7 ? 1 : 0; // Randomly place walls
+        }
+      }
+      maze[0][0] = 0; maze[rows - 1][cols - 1] = 0;
+      return maze;
+    }
+
+    function drawMaze() {
+      for (let i = 0; i < maze.length; i++) {
+        for (let j = 0; j < maze[i].length; j++) {
+          if (maze[i][j] === 1) {
+            fill(255);
+            rect(j * 25, i * 25, 25, 25);
+          }
+        }
+      }
+    }
+
+    function drawPlayer() {
+      fill(0, 255, 0);
+      ellipse(player.x, player.y, 20);
+    }
+
+    function drawGhost() {
+      fill(255, 0, 0);
+      ellipse(ghost.x, ghost.y, 20);
+    }
+
+    function keyPressed() {
+      if (keyCode === UP_ARROW && canMove(player.x, player.y - playerSpeed)) player.y -= playerSpeed;
+      if (keyCode === DOWN_ARROW && canMove(player.x, player.y + playerSpeed)) player.y += playerSpeed;
+      if (keyCode === LEFT_ARROW && canMove(player.x - playerSpeed, player.y)) player.x -= playerSpeed;
+      if (keyCode === RIGHT_ARROW && canMove(player.x + playerSpeed, player.y)) player.x += playerSpeed;
+    }
+
+    function moveGhost() {
+      if (ghost.x < player.x && canMove(ghost.x + ghostSpeed, ghost.y)) ghost.x += ghostSpeed;
+      if (ghost.x > player.x && canMove(ghost.x - ghostSpeed, ghost.y)) ghost.x -= ghostSpeed;
+      if (ghost.y < player.y && canMove(ghost.x, ghost.y + ghostSpeed)) ghost.y += ghostSpeed;
+      if (ghost.y > player.y && canMove(ghost.x, ghost.y - ghostSpeed)) ghost.y -= ghostSpeed;
+    }
+
+    function canMove(x, y) {
+      let row = floor(y / 25);
+      let col = floor(x / 25);
+      return row >= 0 && row < maze.length && col >= 0 && col < maze[0].length && maze[row][col] === 0;
+    }
+
+    function checkGameOver() {
+      if (dist(player.x, player.y, ghost.x, ghost.y) < 20) {
+        noLoop();
+        textSize(32);
+        fill(255);
+        textAlign(CENTER, CENTER);
+        text('Game Over!', width / 2, height / 2);
+      }
+    }
+  </script>
+</body>
+</html>
