@@ -3,86 +3,149 @@
 const playerChoices = [];
 const results = [];
 let round = 0;
-const maxRounds = 50;
+const maxRounds = 8;
 
-const sequenceLength = 5; // Markov-5 chain
+const sequenceLength = 3; // Adjusted for four choices (now including user's own input)
 const sequenceCounts = {};
 
-// Variable to store the accumulated story
-let storySoFar = '';
-
-// Add event listeners for buttons
-document.getElementById('choice-yes').addEventListener('click', async () => await handlePlayerChoice('yes'));
-document.getElementById('choice-no').addEventListener('click', async () => await handlePlayerChoice('no'));
-
-// Add event listener for keyboard input
-document.addEventListener('keydown', handleKeyPress);
+let poemLines = []; // Stores the selected phrases to form the poem
 
 // Add event listener for restart button
 const restartButton = document.getElementById('restart-button');
 restartButton.addEventListener('click', restartGame);
 
-// Initialize the game by fetching the first story segment
-initializeGame();
+// Music Control
+const backgroundMusic = document.getElementById('background-music');
+const musicControlButton = document.getElementById('music-control');
 
-function handleKeyPress(event) {
-    if (event.key.toLowerCase() === 'y') {
-        handlePlayerChoice('yes');
-    } else if (event.key.toLowerCase() === 'n') {
-        handlePlayerChoice('no');
+musicControlButton.addEventListener('click', function () {
+    if (backgroundMusic.paused) {
+        backgroundMusic.play();
+        musicControlButton.innerText = 'Mute Music';
+    } else {
+        backgroundMusic.pause();
+        musicControlButton.innerText = 'Play Music';
     }
-}
+});
+
+// Set initial volume (optional)
+backgroundMusic.volume = 0.5; // Adjust volume level between 0.0 and 1.0
+
+// Initialize the game
+initializeGame();
 
 async function initializeGame() {
     // Reset variables
-    storySoFar = '';
+    poemLines = [];
     playerChoices.length = 0;
     results.length = 0;
     round = 0;
     Object.keys(sequenceCounts).forEach(key => delete sequenceCounts[key]);
 
     // Clear UI elements
-    document.getElementById('story').innerText = ''; // Clear the story div
-    document.getElementById('feedback').innerText = 'Make your choice to see the results...';
+    document.getElementById('poem').innerText = ''; // Clear the poem display
+    document.getElementById('feedback').innerText = 'Select a phrase to begin your poem...';
     document.getElementById('dark-self-response').innerText = 'Dark Self: ???';
     updateRoundCounter();
 
-    // Enable choice buttons
-    document.getElementById('choice-yes').disabled = false;
-    document.getElementById('choice-no').disabled = false;
-    restartButton.style.display = 'none';
+    // Show user input container
+    document.getElementById('user-input-container').style.display = 'block';
 
-    // Clear the decision graph
-    const decisionGraph = document.getElementById('decision-graph');
-    decisionGraph.innerHTML = '';
+    // Fetch and display the first set of phrases
+    await fetchAndDisplayPhrases([], 1); // Start with an empty poem
+}
 
-    // Fetch the initial story segment from the AI
-    const storySegment = await fetchStorySegment('', '');
-    if (storySegment) {
-        storySoFar += storySegment; // Keep full story for AI context
-        document.getElementById('story').innerText = storySegment; // Display only the current segment
-    } else {
-        document.getElementById('story').innerText = 'Failed to load the story. Please try restarting the game.';
+// Add event listener for user phrase submission
+document.getElementById('submit-user-phrase').addEventListener('click', handleUserPhraseSubmission);
+
+async function fetchAndDisplayPhrases(poemSoFar, lineNumber) {
+    try {
+        const response = await fetch('http://localhost:3000/api/generatePhrases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ poemSoFar, lineNumber }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error(`Error fetching phrases: ${errorData.error}`, errorData.details);
+            document.getElementById('feedback').innerText = 'Failed to load phrases. Please try again.';
+            return;
+        }
+
+        const data = await response.json();
+        displayPhraseOptions(data.phrases);
+    } catch (error) {
+        console.error('Error fetching phrases:', error);
+        document.getElementById('feedback').innerText = 'An error occurred. Please try again.';
     }
 }
 
-async function handlePlayerChoice(choice) {
+function displayPhraseOptions(phrases) {
+    const choicesContainer = document.getElementById('choices');
+    choicesContainer.innerHTML = ''; // Clear previous choices
+
+    if (!phrases || phrases.length < 3) {
+        document.getElementById('feedback').innerText = 'Failed to load phrases. Please try again.';
+        return;
+    }
+
+    // Get Dark Self's prediction before displaying options
+    const darkChoiceIndex = darkSelfChoice(playerChoices);
+
+    // Display phrases as buttons
+    phrases.forEach((phrase, index) => {
+        const button = document.createElement('button');
+        button.innerText = phrase;
+        button.classList.add('phrase-button');
+        button.addEventListener('click', () => handlePlayerChoice(phrase, index, darkChoiceIndex));
+        choicesContainer.appendChild(button);
+    });
+
+    // Show user input container
+    document.getElementById('user-input-container').style.display = 'block';
+}
+
+function handleUserPhraseSubmission() {
+    const userPhraseInput = document.getElementById('user-phrase-input');
+    const userPhrase = userPhraseInput.value.trim();
+    if (userPhrase === '') {
+        alert('Please enter a phrase.');
+        return;
+    }
+
+    // Hide user input container
+    document.getElementById('user-input-container').style.display = 'none';
+
+    // Handle the player's own phrase
+    handlePlayerChoice(userPhrase, 3, darkSelfChoice(playerChoices)); // Index 3 represents user's own phrase
+
+    // Clear the input field
+    userPhraseInput.value = '';
+}
+
+function handlePlayerChoice(selectedPhrase, playerChoiceIndex, darkChoiceIndex) {
     if (round >= maxRounds) return;
 
-    // Get Dark Self's choice before adding the current player's choice
-    const darkChoice = darkSelfChoice(playerChoices);
+    // Hide choices and user input
+    document.getElementById('choices').innerHTML = '';
+    document.getElementById('user-input-container').style.display = 'none';
+
+    // Add the selected phrase to the poem
+    poemLines.push(selectedPhrase);
+    updatePoemDisplay();
 
     // Determine if the guess was correct
-    const isCorrectGuess = choice === darkChoice;
+    const isCorrectGuess = playerChoiceIndex === darkChoiceIndex;
 
     // Display the results
-    displayChoiceResults(choice, darkChoice);
+    displayChoiceResults(isCorrectGuess);
 
     // Update the decision graph
     updateDecisionGraph(isCorrectGuess);
 
-    // Now, push the player's choice to playerChoices
-    playerChoices.push(choice);
+    // Push the player's choice index to playerChoices
+    playerChoices.push(playerChoiceIndex);
 
     // Update sequence counts with the new data
     updateSequenceCounts(playerChoices);
@@ -90,46 +153,32 @@ async function handlePlayerChoice(choice) {
     // Update results
     results.push(isCorrectGuess ? 'Correct Guess' : 'Incorrect Guess');
 
-    // Increment round after processing the current round
+    // Increment round
     round++;
 
     // Update the round counter and success rate
     updateRoundCounter();
 
-    // Truncate the story to manage prompt length
-    const truncatedStory = truncateStory(storySoFar, 750); // Adjust max words as needed
-
-    // Disable choice buttons while fetching
-    document.getElementById('choice-yes').disabled = true;
-    document.getElementById('choice-no').disabled = true;
-
-    // Fetch and display the story segment
-    const storySegment = await fetchStorySegment(truncatedStory, choice);
-    if (storySegment) {
-        storySoFar += '\n\n' + storySegment; // Update full story for AI context
-        document.getElementById('story').innerText = storySegment; // Display only the current segment
-    } else {
-        document.getElementById('story').innerText = '[Failed to load the next part of the story.]';
-    }
-
-    // Re-enable choice buttons
-    document.getElementById('choice-yes').disabled = false;
-    document.getElementById('choice-no').disabled = false;
-
-    // Check for game-ending conditions
-    if ((round >= 7 && calculateSuccessRate() >= 0.7) || round >= maxRounds) {
+    // Check for game-ending condition
+    if (round >= maxRounds) {
         endGame();
         return;
     }
 
-    // No need to update the question, as the AI provides it in the story segment
+    // Fetch and display the next set of phrases
+    fetchAndDisplayPhrases(poemLines, round + 1);
 }
 
-function displayChoiceResults(playerChoice, darkChoice) {
-    document.getElementById('dark-self-response').innerText = `Dark Self: ${darkChoice}`;
-    const feedback = playerChoice === darkChoice
-        ? 'Dark Self guessed correctly!'
-        : 'Dark Self guessed incorrectly.';
+function updatePoemDisplay() {
+    const poemElement = document.getElementById('poem');
+    poemElement.innerText = poemLines.join('\n');
+}
+
+function displayChoiceResults(isCorrectGuess) {
+    document.getElementById('dark-self-response').innerText = `Dark Self ${isCorrectGuess ? 'guessed your selection correctly!' : 'failed to predict your choice.'}`;
+    const feedback = isCorrectGuess
+        ? 'Dark Self predicted your choice.'
+        : 'Dark Self failed to predict your choice.';
     document.getElementById('feedback').innerText = feedback;
 }
 
@@ -145,13 +194,12 @@ function updateRoundCounter() {
     const successRate = calculateSuccessRate();
     const successRatePercentage = (successRate * 100).toFixed(2);
     document.getElementById('round-counter').innerText =
-        `Round: ${round} / ${maxRounds} | Dark Self Success Rate: ${successRatePercentage}%`;
+        `Line: ${round} / ${maxRounds} | Dark Self Success Rate: ${successRatePercentage}%`;
 
     // Update the dynamic image based on the success rate percentage
     updateImage(successRate);
 
-    // Calculate hue based on success rate
-    // 0% success -> green (120deg), 70% success -> red (0deg)
+    // Update background color based on success rate
     let rate = successRate * 100; // Convert to percentage
     if (rate > 70) rate = 70; // Cap at 70%
     if (rate < 0) rate = 0; // Minimum at 0%
@@ -170,23 +218,22 @@ function calculateSuccessRate() {
 function endGame() {
     const successRate = calculateSuccessRate();
     const successRatePercentage = (successRate * 100).toFixed(2);
-    const feedback = successRate >= 0.7
-        ? `Game Over! The Dark Self guessed correctly more than 70% of the time!\nFinal success rate: ${successRatePercentage}%`
-        : `Game Over! You survived ${round} rounds without being fully predicted!\nFinal success rate: ${successRatePercentage}%`;
+    const feedback = `Your poem is complete!\nFinal Dark Self success rate: ${successRatePercentage}%`;
     document.getElementById('feedback').innerText = feedback;
-    document.getElementById('choice-yes').disabled = true;
-    document.getElementById('choice-no').disabled = true;
+    document.getElementById('choices').innerHTML = ''; // Remove choice buttons
     restartButton.style.display = 'inline-block';
 }
 
 function restartGame() {
+    restartButton.style.display = 'none';
     initializeGame();
 }
 
 function darkSelfChoice(playerChoices) {
+    const optionsCount = 4; // Three phrases plus the user's own input
     if (playerChoices.length < sequenceLength) {
         // Not enough data, make a random guess
-        return Math.random() < 0.5 ? 'yes' : 'no';
+        return Math.floor(Math.random() * optionsCount); // Random index between 0 and 3
     }
 
     const lastSequence = playerChoices.slice(-sequenceLength).join('');
@@ -194,52 +241,35 @@ function darkSelfChoice(playerChoices) {
     if (sequenceCounts[lastSequence]) {
         // Predict the most frequent next choice after this sequence
         const counts = sequenceCounts[lastSequence];
-        return counts.yes >= counts.no ? 'yes' : 'no';
+        let maxCount = -1;
+        let predictedIndex = 0;
+        for (let i = 0; i < optionsCount; i++) {
+            if (counts[i] > maxCount) {
+                maxCount = counts[i];
+                predictedIndex = i;
+            }
+        }
+        return predictedIndex;
     } else {
         // If sequence not seen before, make a random guess
-        return Math.random() < 0.5 ? 'yes' : 'no';
+        return Math.floor(Math.random() * optionsCount);
     }
 }
 
 function updateSequenceCounts(playerChoices) {
+    const optionsCount = 4; // Updated to reflect the new option
     if (playerChoices.length <= sequenceLength) return;
 
     const sequence = playerChoices.slice(-sequenceLength - 1, -1).join('');
-    const nextChoice = playerChoices[playerChoices.length - 1];
+    const nextChoiceIndex = playerChoices[playerChoices.length - 1];
 
     if (!sequenceCounts[sequence]) {
-        sequenceCounts[sequence] = { yes: 0, no: 0 };
-    }
-    sequenceCounts[sequence][nextChoice]++;
-}
-
-async function fetchStorySegment(storySoFar, choice) {
-    try {
-        const response = await fetch('http://localhost:3000/api/generateStory', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ storySoFar, choice }),
-        });
-
-        if (!response.ok) {
-            console.error(`Error fetching story segment: ${response.statusText}`);
-            return '';
+        sequenceCounts[sequence] = {};
+        for (let i = 0; i < optionsCount; i++) {
+            sequenceCounts[sequence][i] = 0;
         }
-
-        const data = await response.json();
-        return data.storySegment || '';
-    } catch (error) {
-        console.error('Error fetching story segment:', error);
-        return '';
     }
-}
-
-function truncateStory(story, maxWords) {
-    const words = story.split(' ');
-    if (words.length > maxWords) {
-        return words.slice(words.length - maxWords).join(' ');
-    }
-    return story;
+    sequenceCounts[sequence][nextChoiceIndex]++;
 }
 
 function updateImage(percentage) {
@@ -250,14 +280,16 @@ function updateImage(percentage) {
     if (successRatePercentage >= 60 && successRatePercentage <= 70) {
         image.src = 'images/demon.png'; // Image path for the demon
         image.alt = 'demon';
+        image.style.display = 'block';
     } else if (successRatePercentage >= 0 && successRatePercentage <= 40) {
         image.src = 'images/angel.png'; // Image path for the angel
         image.alt = 'angel';
+        image.style.display = 'block';
     } else if (successRatePercentage >= 41 && successRatePercentage <= 59) {
         image.src = 'images/neutral.png'; // Image path for neutral
         image.alt = 'neutral';
+        image.style.display = 'block';
     } else {
-        image.src = 'images/neutral.png'; // Default to neutral if out of range
-        image.alt = 'neutral';
+        image.style.display = 'none';
     }
 }

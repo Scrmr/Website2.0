@@ -1,101 +1,132 @@
 /* styles.css */
 
-/* Apply styles to the entire body for dynamic background color */
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+
+/* Apply styles to the entire body */
 body {
     margin: 0;
     padding: 0;
-    transition: background-color 0.5s ease-in-out; /* Smooth transition */
-    height: 100vh; /* Ensure body takes full viewport height */
-    width: 100vw; /* Ensure body takes full viewport width */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: hsl(120, 96%, 22%); /* Initial background color: Dark Green */
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, #1f1c2c, #928dab);
+    color: #fff;
+    min-height: 100vh;
+    /* Smooth Transition for Background Color Changes */
+    transition: background-color 0.5s ease-in-out;
 }
 
 /* Game Container Styles */
 #game-container {
-    position: relative; /* For pseudo-element positioning */
-    width: 80%;
+    position: relative;
+    width: 90%;
     max-width: 800px;
-    margin: 0 auto;
+    margin: 40px auto;
     text-align: center;
-    font-family: Arial, sans-serif;
-    background-color: #000; /* Black background */
-    color: #fff; /* White text */
-    border: 1px solid #ccc;
-    border-radius: 20px; /* Increased radius for smoother edges */
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    padding: 30px 20px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    overflow: hidden;
+}
+
+/* Heading Styles */
+#game-container h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    font-weight: 600;
+    letter-spacing: 2px;
+}
+
+/* Poem Display */
+#poem {
+    margin: 20px auto;
     padding: 20px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    overflow: hidden; /* To clip the pseudo-element */
-    transition: background-color 0.5s ease; /* Smooth transition for any future changes */
-    background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
-    backdrop-filter: blur(10px); /* Frosted-glass effect */
-    border: 1px solid rgba(255, 255, 255, 0.3); /* Semi-transparent border */
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-}
-
-/* Pseudo-element for Blurred Edges */
-#game-container::before {
-    content: '';
-    position: absolute;
-    top: -15px;
-    left: -15px;
-    right: -15px;
-    bottom: -15px;
-    background: inherit; /* Inherits black background */
-    border-radius: 25px; /* Slightly larger radius */
-    filter: blur(15px); /* Blur effect */
-    z-index: -1; /* Place behind the game container */
-}
-
-/* Icons Container */
-#icons-container {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
-}
-
-#icons-container img {
-    margin: 0 20px;
-    width: 100px; /* Adjust size as needed */
-}
-
-/* Story Display */
-#story {
-    margin: 20px 0;
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    min-height: 100px;
-    background-color: #f9f9f9; /* White background */
-    font-size: 18px;
-    line-height: 1.5;
+    background-color: rgba(0, 0, 0, 0.9);
+    border-radius: 10px;
+    min-height: 200px;
+    font-size: 1.2em;
+    line-height: 1.6;
     text-align: left;
-    color: #000; /* Dark text */
+    max-width: 600px;
+    overflow-y: auto;
+    color: #fff;
+    word-wrap: break-word;
+    white-space: pre-wrap; /* Preserve line breaks */
+    position: relative;
 }
 
-/* Choice Buttons */
-#choices button {
-    padding: 10px 20px;
+/* Phrase Buttons */
+.phrase-button {
+    padding: 15px 20px;
     margin: 10px;
-    font-size: 16px;
+    font-size: 1em;
     cursor: pointer;
-    background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent white */
-    color: #fff; /* White text */
-    border: 1px solid #fff;
-    border-radius: 5px;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    background: none;
+    color: #fff;
+    border: 2px solid #fff;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    display: inline-block;
+    width: calc(100% / 3 - 40px); /* Adjust width to fit three buttons in a row */
 }
 
-#choices button:hover {
-    background-color: rgba(255, 255, 255, 0.4); /* Slightly more opaque on hover */
+.phrase-button:hover {
+    background-color: #fff;
+    color: #000;
+}
+
+/* Choices Container */
+#choices {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* User Input Container */
+#user-input-container {
+    margin-top: 20px;
+    text-align: center;
+}
+
+#user-phrase-input {
+    padding: 10px;
+    width: 80%;
+    max-width: 500px;
+    font-size: 1em;
+    border: 2px solid #fff;
+    border-radius: 5px;
+    background: none;
+    color: #fff;
+    margin-right: 10px;
+}
+
+#user-phrase-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+#submit-user-phrase {
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+    background: none;
+    color: #fff;
+    border: 2px solid #fff;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+}
+
+#submit-user-phrase:hover {
+    background-color: #fff;
+    color: #000;
 }
 
 /* Dark Self Response, Feedback, and Round Counter */
 #dark-self-response, #feedback, #round-counter {
-    color: #fff; /* White text */
-    margin: 10px 0;
+    margin: 15px 0;
+    font-size: 1.1em;
 }
 
 /* Decision Graph */
@@ -111,69 +142,120 @@ body {
     height: 15px;
     border-radius: 50%;
     margin: 5px;
+    background-color: #555;
+    transition: transform 0.3s ease;
 }
 
 .correct-guess {
-    background-color: green;
+    background-color: #28a745;
 }
 
 .incorrect-guess {
-    background-color: red;
+    background-color: #dc3545;
+}
+
+.decision-node:hover {
+    transform: scale(1.2);
 }
 
 /* Restart Button */
 #restart-button {
-    padding: 10px 20px;
-    font-size: 16px;
+    padding: 12px 24px;
+    font-size: 1em;
     cursor: pointer;
-    display: none; /* Hidden by default */
-    background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent white */
-    color: #fff; /* White text */
-    border: 1px solid #fff;
-    border-radius: 5px;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    background: none;
+    color: #fff;
+    border: 2px solid #fff;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    margin-top: 20px;
 }
 
 #restart-button:hover {
-    background-color: rgba(255, 255, 255, 0.4); /* Slightly more opaque on hover */
+    background-color: #fff;
+    color: #000;
+}
+
+/* Dynamic Image */
+#dynamic-image {
+    width: 150px;
+    margin: 20px 0;
+    display: none; /* Hide by default */
+}
+
+/* Music Control Button */
+.music-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 8px 12px;
+    font-size: 0.9em;
+    cursor: pointer;
+    background: none;
+    color: #fff;
+    border: 1px solid #fff;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.music-button:hover {
+    background-color: #fff;
+    color: #000;
 }
 
 /* Responsive Design for Smaller Screens */
 @media (max-width: 600px) {
     #game-container {
         width: 95%;
-        padding: 15px;
+        padding: 20px;
     }
 
-    #icons-container img {
-        width: 80px; /* Reduce icon size on smaller screens */
+    #poem {
+        font-size: 1em;
     }
 
-    #story {
-        font-size: 16px; /* Slightly smaller text */
-    }
-
-    #choices button, #restart-button {
-        padding: 8px 16px;
+    .phrase-button, #restart-button {
+        padding: 10px 20px;
         margin: 8px;
-        font-size: 14px;
+        font-size: 0.9em;
+        width: calc(100% - 40px); /* Stack buttons on smaller screens */
+    }
+
+    #dynamic-image {
+        width: 120px;
     }
 }
 
+/* Background Animation */
+body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-image: radial-gradient(circle at center, rgba(255,255,255,0.1), rgba(0,0,0,0));
+    animation: rotation 20s infinite linear;
+    z-index: -1;
+}
 
-@keyframes pulsate {
-    0% {
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+@keyframes rotation {
+    from {
+        transform: rotate(0deg);
     }
-    50% {
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-    }
-    100% {
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    to {
+        transform: rotate(360deg);
     }
 }
 
-#game-container {
-    /* Existing styles... */
-    animation: pulsate 3s infinite;
+/* Scrollbar Styles */
+#poem::-webkit-scrollbar {
+    width: 6px;
+}
+
+#poem::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
 }

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Meta tags and title -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Poem Game</title>
+
+    <!-- Include Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Include OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Include GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/gsap.min.js"></script>
+    <!-- Include the CSS stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body style="margin: 0; overflow: hidden;">
+    <!-- Container for the game -->
+    <div id="game-container">
+        <!-- Phrases will be injected here -->
+    </div>
+
+    <!-- Container for the poem -->
+    <div id="poem-container">
+        <!-- Selected poem lines will appear here -->
+    </div>
+
+    <!-- The canvas for rendering the 3D scene will be added by Three.js -->
+    <!-- Main JavaScript code -->
+    <script>
+        // *** Existing Three.js code (if you wish to keep the cube) ***
+        // If you prefer to remove the cube, you can omit this section.
+
+        // Create the scene
+        const scene = new THREE.Scene();
+
+        // Create a camera (FOV, Aspect Ratio, Near Clipping, Far Clipping)
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+
+        // Create a WebGL renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Add the renderer to the document body
+        document.body.appendChild(renderer.domElement);
+
+        // Optional: Add ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        // Set camera position
+        camera.position.z = 5;
+
+        // Add OrbitControls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        // Animation function
+        function animate() {
+            requestAnimationFrame(animate);
+            // Render the scene
+            renderer.render(scene, camera);
+        }
+
+        // Start the animation loop
+        animate();
+
+        // Update camera aspect ratio and renderer size on window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // *** End of Three.js code ***
+
+        // *** Game Logic ***
+
+        // Data structure for phrases and rhymes
+        const phrases = [
+            {
+                text: "Whispers of the silent night",
+                rhymes: [
+                    "Echoes fade with morning light",
+                    "Shadows dance out of sight",
+                    "Stars align, a guiding sight"
+                ]
+            },
+            {
+                text: "Secrets in the ancient trees",
+                rhymes: [
+                    "Carried by the gentle breeze",
+                    "Whistling through the endless seas",
+                    "Hidden songs of honey bees"
+                ]
+            },
+            {
+                text: "Footsteps on the dusty road",
+                rhymes: [
+                    "Bearing yet another load",
+                    "Stories waiting to be told",
+                    "Hearts entwined in fate's code"
+                ]
+            },
+            {
+                text: "Dreams beneath the tide",
+                rhymes: [
+                    "Glides on ocean’s pride",
+                    "Side where ghosts reside",
+                    "Ride to worlds inside",
+                    "Wide the waves confide",
+                    "Guide by moon’s divide"
+                ]
+            },
+
+            
+            // Add more phrases as desired
+        ];
+
+        let poemLines = []; // To store selected lines
+        let currentRhymes = []; // To store rhyming phrases
+        let lineCount = 0; // To track the number of lines selected
+
+        // Function to display phrases on the screen
+        function displayPhrases(phrasesArray) {
+            const gameContainer = document.getElementById('game-container');
+            gameContainer.innerHTML = ''; // Clear existing phrases
+
+            phrasesArray.forEach(phraseObj => {
+                const phraseDiv = document.createElement('div');
+                phraseDiv.classList.add('phrase');
+                phraseDiv.textContent = phraseObj.text;
+
+                // Position the phrase at a random location
+                phraseDiv.style.top = Math.random() * 80 + 'vh'; // 0 to 80% of viewport height
+                phraseDiv.style.left = Math.random() * 80 + 'vw'; // 0 to 80% of viewport width
+
+                // Add click event listener
+                phraseDiv.addEventListener('click', () => {
+                    selectPhrase(phraseObj.text, phraseObj.rhymes);
+                });
+
+                gameContainer.appendChild(phraseDiv);
+
+                // Animate the phrases into view
+                gsap.fromTo(
+                    phraseDiv,
+                    { opacity: 0, scale: 0.5 },
+                    {
+                        opacity: 1,
+                        scale: 1,
+                        duration: 1,
+                        ease: 'elastic.out(1, 0.5)'
+                    }
+                );
+            });
+        }
+
+        // Function to handle phrase selection
+        function selectPhrase(selectedText, rhymesArray) {
+            poemLines.push(selectedText);
+            lineCount++;
+
+            // Update the poem container
+            updatePoemDisplay();
+
+            // Clear existing phrases
+            const gameContainer = document.getElementById('game-container');
+            gameContainer.innerHTML = '';
+
+            if (lineCount < 4) {
+                // Display rhyming phrases
+                currentRhymes = rhymesArray.map(text => ({ text, rhymes: [] }));
+                displayPhrases(currentRhymes);
+            } else {
+                // Poem is complete
+                endGame();
+            }
+        }
+
+        // Function to update the poem display
+        function updatePoemDisplay() {
+            const poemContainer = document.getElementById('poem-container');
+            poemContainer.innerHTML = ''; // Clear existing lines
+
+            poemLines.forEach(line => {
+                const lineDiv = document.createElement('div');
+                lineDiv.classList.add('poem-line');
+                lineDiv.textContent = line;
+                poemContainer.appendChild(lineDiv);
+
+                // Animate the poem lines
+                gsap.fromTo(
+                    lineDiv,
+                    { opacity: 0, x: -50 },
+                    { opacity: 1, x: 0, duration: 1, ease: 'power2.out' }
+                );
+            });
+        }
+
+        // Function to end the game
+        function endGame() {
+            const gameContainer = document.getElementById('game-container');
+            gameContainer.innerHTML = '';
+
+            // Optionally, add a restart button
+            const restartButton = document.createElement('button');
+            restartButton.id = 'restart-button';
+            restartButton.textContent = 'Create Another Poem';
+            restartButton.addEventListener('click', () => {
+                restartGame();
+            });
+            document.body.appendChild(restartButton);
+
+            // Animate the restart button
+            gsap.fromTo(
+                restartButton,
+                { opacity: 0, scale: 0.5 },
+                { opacity: 1, scale: 1, duration: 1, ease: 'back.out(1.7)' }
+            );
+        }
+
+        // Function to restart the game
+        function restartGame() {
+            // Reset variables
+            poemLines = [];
+            currentRhymes = [];
+            lineCount = 0;
+
+            // Remove restart button
+            const restartButton = document.getElementById('restart-button');
+            if (restartButton) {
+                document.body.removeChild(restartButton);
+            }
+
+            // Clear poem container
+            const poemContainer = document.getElementById('poem-container');
+            poemContainer.innerHTML = '';
+
+            // Display initial phrases again
+            displayPhrases(phrases);
+        }
+
+        // Start the game by displaying initial phrases
+        displayPhrases(phrases);
+
+    </script>
+</body>
+</html>

@@ -1,92 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Psychological Choice Game</title>
-  <link rel="stylesheet" href="styles.css" />
-  <style>
-    /* Basic styles for better visibility */
-    #game-container {
-        width: 80%;
-        margin: auto;
-        text-align: center;
-        font-family: Arial, sans-serif;
-    }
-    #icons-container {
-        display: flex;
-        justify-content: center;
-        margin: 20px 0;
-    }
-    #icons-container img {
-        margin: 0 20px;
-        width: 100px; /* Adjust size as needed */
-    }
-    #story {
-        margin: 20px 0;
-        padding: 15px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        min-height: 100px;
-        background-color: #f9f9f9;
-        font-size: 18px;
-        line-height: 1.5;
-        text-align: left;
-    }
-    #choices button {
-        padding: 10px 20px;
-        margin: 10px;
-        font-size: 16px;
-        cursor: pointer;
-    }
-    #decision-graph {
-        margin-top: 20px;
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    .decision-node {
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        margin: 5px;
-    }
-    .correct-guess {
-        background-color: green;
-    }
-    .incorrect-guess {
-        background-color: red;
-    }
-    #restart-button {
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-    }
-  </style>
+    <!-- Meta tags and other head elements -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryptic Poem Game</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
     <div id="game-container">
-        <!-- Icons Container -->
-        
-        
-        <!-- Story Display -->
-        <div id="story"></div>
-        
-        <!-- Game Elements -->
-        <div id="choices">
-            <button id="choice-yes">Embrace</button>
-            <button id="choice-no">Reject</button>
+        <h1>Cryptic Poem Game</h1>
+        <!-- Dynamic Image (if used) -->
+        <img id="dynamic-image" src="" alt="" style="display: none;">
+        <!-- Poem Display -->
+        <div id="poem"></div>
+        <!-- Choices -->
+        <div id="choices"></div>
+        <!-- User Input -->
+        <div id="user-input-container">
+            <input type="text" id="user-phrase-input" placeholder="Enter your own phrase">
+            <button id="submit-user-phrase">Submit</button>
         </div>
-        <div id="dark-self-response">Dark Self: ???</div>
-        <div id="feedback">Make your choice to see the results...</div>
-        <div id="round-counter">Round: 0 / 50 | Dark Self Success Rate: 0%</div>
-        <div id="decision-graph-container">
-            <div id="decision-graph"></div>
-        </div>
-        <div id="icons-container"></div>
-        <img id="dynamic-image" src="" alt="neutral" />
-        </div>
+        <!-- Feedback and Dark Self Response -->
+        <div id="feedback"></div>
+        <div id="dark-self-response"></div>
+        <div id="round-counter"></div>
+        <div id="decision-graph"></div>
+        <!-- Restart Button -->
         <button id="restart-button" style="display: none;">Restart Game</button>
+        <!-- Music Control -->
+        <button id="music-control" class="music-button">Mute Music</button>
+        <!-- Background Music -->
+        <audio id="background-music" loop autoplay>
+            <source src="music/background-music.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
     </div>
     <script src="game.js"></script>
 </body>

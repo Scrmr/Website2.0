@@ -9,157 +9,90 @@ require('dotenv').config();
 const app = express();
 const port = 3000;
 
-// ... [CORS and other setup code remains unchanged]
-
+// Enable CORS and other middleware
+app.use(cors());
 app.use(bodyParser.json());
 
-// Helper function to approximate token count
-function countTokens(text) {
-    // Approximate: 1 token ~ 4 characters in English
-    return Math.ceil(text.length / 4);
-}
-
-app.post('/api/generateStory', async (req, res) => {
-    let { storySoFar, choice } = req.body;
+// Endpoint to generate cryptic phrases
+app.post('/api/generatePhrases', async (req, res) => {
+    let { poemSoFar, lineNumber } = req.body;
 
     // Validate Request Body
-    if (typeof storySoFar !== 'string' || typeof choice !== 'string') {
+    if (typeof lineNumber !== 'number' || !Array.isArray(poemSoFar)) {
         console.error('Invalid request body:', req.body);
-        return res.status(400).json({ error: 'Invalid request body. "storySoFar" and "choice" must be strings.' });
+        return res.status(400).json({ error: 'Invalid request body. "lineNumber" must be a number and "poemSoFar" must be an array of strings.' });
     }
 
-    // Summarize storySoFar if it exceeds a certain length
-    const maxStoryTokens = 1500; // Adjust as needed
-    const storyTokens = countTokens(storySoFar);
+    // Construct the messages for the AI
+    let userMessage;
 
-    if (storyTokens > maxStoryTokens) {
-        try {
-            const summaryResponse = await axios.post(
-                'https://api.openai.com/v1/chat/completions',
-                {
-                    model: 'gpt-3.5-turbo',
-                    messages: [
-                        {
-                            role: 'system',
-                            content: 'You are a helpful assistant that summarizes stories.'
-                        },
-                        {
-                            role: 'user',
-                            content: `Please provide a concise summary of the following story and suggest what should happen next in less than 500 words:
+    if (lineNumber === 1) {
+        // First line: Generate any three cryptic phrases
+        userMessage = `
+Generate three unique fun phrases that could serve as the opening lines of a funny deadpan poem. The phrases should be rich in imagery and fun. They should seamlessly set the tone for the poem, inviting the reader to delve deeper. Do not include quotation marks around the phrases. Present them exactly as a numbered list without any additional text:
 
-${storySoFar}`
-                        }
-                    ],
-                    max_tokens: 1000,
-                    temperature: 0.7,
-                },
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-                    },
-                }
-            );
-
-            if (
-                summaryResponse.data &&
-                summaryResponse.data.choices &&
-                summaryResponse.data.choices.length > 0 &&
-                summaryResponse.data.choices[0].message &&
-                summaryResponse.data.choices[0].message.content
-            ) {
-                const summary = summaryResponse.data.choices[0].message.content.trim();
-                storySoFar = summary;
-            } else {
-                console.error('Invalid response from OpenAI API during summarization:', summaryResponse.data);
-                // If summarization fails, truncate the story
-                storySoFar = storySoFar.slice(-6000); // Approximate character count
-            }
-        } catch (error) {
-            console.error('Error during story summarization:', error);
-            // If summarization fails, truncate the story
-            storySoFar = storySoFar.slice(-6000); // Approximate character count
-        }
-    }
-
-    // Construct the messages for chat completion
-    let messages = [
-        {
-            role: 'system',
-            content: 'You are an AI storytelling assistant for an interactive narrative game.'
-        }
-    ];
-
-    if (!storySoFar.trim() && !choice.trim()) {
-        // Beginning of the story
-        messages.push({
-            role: 'user',
-            content: `
-Start the story in the second-person narrative:
-
-"You are traversing a barren desert. In the heat and exhaustion, you may have begun to hallucinate. A few steps away, you notice something shiny. As you approach, you realize it is a genie's lamp. Perhaps the stories are true... Do you rub the lamp?"
-
-Continue the story in a psychologically engaging way, focusing on ambiguity and intrigue, while making sure the story progresses the plot.
-
-End with a 'yes' or 'no' question for the player that doesn't have an obvious 'right' choice.
-
-Ensure the response concludes naturally without cutting off.
-
-Please make sure your response is at least 200 words and does not exceed 500 tokens.
-            `
-        });
+1.
+2.
+3.
+        `;
     } else {
-        // Continue the story based on the player's choice
-        messages.push({
-            role: 'user',
-            content: `
-Story so far:
-${storySoFar}
+        // Subsequent lines: Generate three cryptic phrases based on the poem so far
+        const poemText = poemSoFar.join('\n');
+        userMessage = `
+Given the poem so far:
 
-The player chose '${choice}'.
+${poemText}
 
-Based on the story so far and the player's choice, continue the story in the second-person narrative. Focus on psychological engagement, ambiguity, and intrigue, while making sure the story progresses the plot.
+Generate three unique phrases that continue this poem. Each new line should offer a subversion of the expectations set by the previous line, so that the user it surprised in a fun kind of way. The phrases should be thought-provoking and encourage the reader to interpret their deeper meanings. Do not include quotation marks around the phrases. Present them exactly as a numbered list without any additional text:
 
-End with a 'yes' or 'no' question for the player that doesn't have an obvious 'right' choice.
-
-Do not repeat the "Story so far" or previous choices in your response.
-
-Ensure the response concludes naturally without cutting off.
-
-Please make sure your response is at least 200 words and does not exceed 500 tokens.
-            `
-        });
+1.
+2.
+3.
+        `;
     }
 
     try {
         const response = await axios.post(
             'https://api.openai.com/v1/chat/completions',
             {
-                model: 'gpt-3.5-turbo',
-                messages: messages,
-                max_tokens: 750, // Adjusted to ensure the total tokens stay within 4096
-                temperature: 0.7,
-                n: 1,
-                // Remove 'stop' parameter if present
+                model: 'gpt-4o-mini', // Using your specified model
+                messages: [{ role: 'user', content: userMessage }],
+                max_tokens: 150,
+                temperature: 0.8, // Increased temperature for more creativity
+                top_p: 1,
+                frequency_penalty: 0,
+                presence_penalty: 0,
             },
             {
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, // Ensure your OpenAI API key is set in .env file
+                    Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
                 },
             }
         );
 
         // Validate OpenAI Response
-        if (
-            response.data &&
-            response.data.choices &&
-            response.data.choices.length > 0 &&
-            response.data.choices[0].message &&
-            response.data.choices[0].message.content
-        ) {
-            const storySegment = response.data.choices[0].message.content.trim();
-            res.json({ storySegment });
+        if (response.data && response.data.choices && response.data.choices.length > 0) {
+            const text = response.data.choices[0].message.content.trim();
+
+            console.log('AI Response:', text);
+
+            // Extract the phrases from the response
+            const phrases = text
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => /^\d+\.\s*(.+)$/.test(line))
+                .map(line => line.replace(/^\d+\.\s*/, '').trim())
+                .map(phrase => phrase.replace(/^"(.*)"$/, '$1')); // Remove leading and trailing quotes
+
+            console.log('Extracted Phrases:', phrases);
+
+            if (phrases.length >= 3) {
+                res.json({ phrases: phrases.slice(0, 3) });
+            } else {
+                console.error('Failed to extract phrases:', text);
+                res.status(500).json({ error: 'Failed to extract phrases from AI response.' });
+            }
         } else {
             console.error('Invalid response from OpenAI API:', response.data);
             res.status(500).json({ error: 'Invalid response from AI API.' });
