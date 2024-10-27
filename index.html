@@ -1,174 +1,418 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Meta tags and title -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ignasz</title>
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
+    <!-- Include Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Include OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Include GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/gsap.min.js"></script>
+    <!-- Include the CSS stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- Include Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Custom styles -->
     <style>
         body {
+            margin: 0;
+            overflow: hidden;
             font-family: 'Roboto', sans-serif;
+            background-color: #000;
         }
-        .navbar-dark .navbar-nav .nav-link {
-            color: #ffffff; /* Neon blue accent color */
-            text-transform: uppercase;
+        /* Style for the navbar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            flex-wrap: wrap;
+        }
+        .navbar a {
+            color: #ffffff;
+            text-decoration: none;
+            margin-right: 15px;
+            font-weight: bold;
             transition: color 0.3s;
         }
-        .navbar-dark .navbar-nav .nav-link:hover {
-            color: #fa0101; /* White on hover */
+        .navbar a:hover {
+            color: #fa0101;
         }
-        .navbar {
-            border-bottom: 2px solid #ffffff; /* Add a bottom border */
+        /* Style for the welcome section */
+        #welcome-section {
+            position: relative;
+            margin-top: 80px;
+            color: #ffffff;
+            text-align: center;
+            z-index: 10;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 20px;
         }
-
-        .futuristic-divider {
-    border: none;
-    height: 3px;
-    background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(1, 3, 3, 0.6), rgba(255, 255, 255, 0));
-    margin-top: 2rem; /* Adjust this value as needed */
-    margin-bottom: 2rem; /* Adjust this value as needed */
-}
-
-.icon-hover:hover {
-  transform: scale(0.95); /* Icons will shrink to 95% of their size */
-  transition: transform 0.3s ease; /* Smooth transition for the transform effect */
-}
+        #welcome-section img {
+            width: 150px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+        }
+        #welcome-section h2 {
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        #welcome-section p {
+            font-size: 1.2em;
+            line-height: 1.5em;
+        }
+        /* Style for the content items */
+        .content-item {
+            position: absolute;
+            color: #ffffff;
+            text-align: center;
+            cursor: pointer;
+            z-index: 5;
+            width: 200px;
+            background-color: rgba(0, 0, 0, 0.5); /* Translucent dark background */
+            backdrop-filter: blur(2px);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); /* Soft shadow */
+            animation: pulse 3s infinite; /* Pulsing glow */
+        }
+        .content-item img {
+            width: 100px;
+            margin-bottom: 10px;
+            transition: transform 0.3s;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3)); /* Glow effect */
+        }
+        .content-item img:hover {
+            transform: scale(0.95);
+        }
+        .content-item p {
+            font-size: 1em;
+        }
+        /* Pulsing animation */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+            }
+            100% {
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            }
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #welcome-section {
+                margin-top: 100px;
+                padding: 0 20px;
+            }
+            .navbar a {
+                margin-bottom: 10px;
+            }
+            .content-item {
+                width: 150px;
+            }
+            .content-item img {
+                width: 80px;
+            }
+        }
     </style>
-
 </head>
-     
-
-
 <body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <a class="navbar-brand" href="index.html">IgnasZ</a>
+        <a href="philosophy.html">Philosophy</a>
+        <a href="caesarpoem.html">Caesar's Poem</a>
+        <a href="probability.html">Probability Game</a>
+        <a href="gofl.html">Game of Finite Life</a>
+        <a href="PenguinGame.html">Walk a Penguin</a>
+        <a href="Poems/poems.html">Favourite Poems</a>
+        <a href="maze.html">A Maze Ing</a>
+        <a href="learn.html">Learning Materials</a>
+        <a href="about.html">About</a>
+    </div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.html">IgnasZ</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="philosophy.html">Philosophy</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="caesarpoem.html">Caesar's Poem</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="probability.html">Probability Game</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="gofl.html">Game of Finite Life</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="PenguinGame.html">Walk a Penguin</a>
-                    </li>
-                    <li class="nav-item"></li>
-                        <a class="nav-link" href="Poems/poems.html">Favourite poems</a>
-                    </li>
-                    <li class="nav-item"></li>
-                        <a class="nav-link" href="maze.html">A maze ing</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="learn.html">Learning Materials</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="about.html">About</a>
-                    </li>
-                    
-                    <!-- Add other navigation items here -->
-                </ul>
-            </div>
-        </div>
-    </nav>
-    
-    <div class="container mt-5">
-        <div class="row align-items-center">
-            <div class="col-lg-4">
-                <!-- Replace 'path_to_your_image.jpg' with the actual path to your image -->
-                <img src="images/me.jpg" class="rounded-circle img-fluid" alt="Your Name" style="width: 75%; height: auto;">
-            </div>
-            <div class="col-lg-8">
-                <h2>Welcome</h2>
-                <p>
-                    I use this website to record what I learn in my spare time. Mostly in topics of philosophy, AI and information technologies more generally.
-
-            Most of it will be displayed in the form of small projects - if something doesn't work, it's probably because I'm still working on it.
-
+    <!-- Welcome Section -->
+    <div id="welcome-section">
+        <img src="images/me.jpg" alt="Your Name">
+        <h2>Welcome</h2>
+        <p>
+            I use this website to record what I learn in my spare time, mostly in topics of philosophy, AI, and information technologies more generally.
+            Most of it will be displayed in the form of small projects—if something doesn't work, it's probably because I'm still working on it.
             Began in February, 2024.
-                </p>
-                <!-- More introductory text here -->
-            </div>
-        </div>
+        </p>
     </div>
 
-    <hr class="futuristic-divider">
-    
-    <div class="container">
-        <div class="row">
-            <!-- Left column for icons -->
-            <div class="col-12 col-md-6 col-lg-6 mb-3 mt-5">
-                    <a href="philosophy.html" class="media text-decoration-none">
-                        <img src="images/philosophy.png" alt="Philosophy" class="align-self-center mr-3 img-fluid icon-hover">
-                        <div class="media-body">
-                            <p class="text-dark mb-0">Some of my philosophy essays related to ICTs</p>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-12 col-md-6 col-lg-6 mb-3 mt-5">
-                    <a href="caesarpoem.html" class="media text-decoration-none">
-                        <img src="images/cypherpoem.png" alt="Caesar Cipher Poem" class="align-self-center mr-3 img-fluid icon-hover">
-                        <div class="media-body">
-                            <p class="text-dark mb-0">Poem Generator with a twist</p>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-12 col-md-6 col-lg-6 mb-3 mt-5">
-                    <a href="probability.html" class="media text-decoration-none">
-                        <img src="images/probability2.png" alt="Probability" class="align-self-center mr-3 img-fluid icon-hover">
-                        <div class="media-body">
-                            <p class="text-dark mb-0">Probability game where an algorithm will try to guess what you'll press next</p>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-12 col-md-6 col-lg-6 mb-3 mt-5">
-                    <a href="gofl.html" class="media text-decoration-none">
-                        <img src="images/gofl.png" alt="Game of Finite Life" class="align-self-center mr-3 img-fluid icon-hover">
-                        <div class="media-body">
-                            <p class="text-dark mb-0">Inspired by Fenway's Game of Life, my attempt at making a Game of Finite Life (not ready yet)</p>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-12 col-md-6 col-lg-6 mb-3 mt-5">
-                    <a href="learn.html" class="media text-decoration-none">
-                        <img src="images/learn.png" alt="Learning" class="align-self-center mr-3 img-fluid icon-hover">
-                        <div class="media-body">
-                            <p class="text-dark mb-0">Some resources for learning, as well as cool things I find on the internet</p>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-12 col-md-6 col-lg-6 mb-3 mt-5">
-                    <a href="about.html" class="media text-decoration-none">
-                        <img src="images/about.png" alt="About" class="align-self-center mr-3 img-fluid icon-hover">
-                        <div class="media-body">
-                            <p class="text-dark mb-0">Info about me</p>
-                        </div>
-                    </a>
-                </div>
-            <!-- Right column for content -->
-            <div class="col-md-10">
-                <!-- Content goes here -->
-            </div>
-        </div>
+    <!-- Content Items -->
+    <div id="content-items">
+        <!-- Content items will be dynamically added here -->
     </div>
-    
-    
 
-    <!-- Bootstrap JS, Popper.js, and jQuery -->
-    <script src="js/bootstrap.bundle.min.js"></script>
+    <!-- Three.js scene will be added to the body -->
+    <!-- Main JavaScript code -->
+    <script>
+        // Create the scene
+        const scene = new THREE.Scene();
+
+        // Create a camera
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+
+        // Create a renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.style.position = 'fixed';
+        renderer.domElement.style.top = '0';
+        renderer.domElement.style.left = '0';
+        renderer.domElement.style.zIndex = '1'; // Lower z-index to allow content over it
+        document.body.appendChild(renderer.domElement);
+
+        // Set camera position
+        camera.position.z = 5;
+
+        // Add some ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        // Create stars for the background
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+        const starVertices = [];
+        for (let i = 0; i < 10000; i++) {
+            const x = THREE.MathUtils.randFloatSpread(2000);
+            const y = THREE.MathUtils.randFloatSpread(2000);
+            const z = THREE.MathUtils.randFloatSpread(2000);
+            starVertices.push(x, y, z);
+        }
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+
+        // Create a secondary set of stars to appear in front of content items
+        const frontStarsGeometry = new THREE.BufferGeometry();
+        const frontStarsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.02 });
+        const frontStarVertices = [];
+        for (let i = 0; i < 1000; i++) {
+            const x = THREE.MathUtils.randFloatSpread(50);
+            const y = THREE.MathUtils.randFloatSpread(50);
+            const z = THREE.MathUtils.randFloatSpread(50) - 25; // Slightly in front
+            frontStarVertices.push(x, y, z);
+        }
+        frontStarsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(frontStarVertices, 3));
+        const frontStars = new THREE.Points(frontStarsGeometry, frontStarsMaterial);
+        scene.add(frontStars);
+
+        // Animation function
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate stars
+            stars.rotation.x += 0.0005;
+            stars.rotation.y += 0.0005;
+
+            frontStars.rotation.x -= 0.0003;
+            frontStars.rotation.y -= 0.0003;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // GSAP animations for content items
+        // Content items data
+        const contentItems = [
+            {
+                href: "philosophy.html",
+                imgSrc: "images/philosophy.png",
+                alt: "Philosophy",
+                text: "Some of my philosophy essays related to ICTs"
+            },
+            {
+                href: "caesarpoem.html",
+                imgSrc: "images/cypherpoem.png",
+                alt: "Caesar Cipher Poem",
+                text: "Poem Generator with a twist"
+            },
+            {
+                href: "probability.html",
+                imgSrc: "images/probability2.png",
+                alt: "Probability",
+                text: "Probability game where an algorithm will try to guess what you'll press next"
+            },
+            {
+                href: "gofl.html",
+                imgSrc: "images/gofl.png",
+                alt: "Game of Finite Life",
+                text: "Inspired by Conway's Game of Life, my attempt at making a Game of Finite Life (not ready yet)"
+            },
+            {
+                href: "learn.html",
+                imgSrc: "images/learn.png",
+                alt: "Learning",
+                text: "Resources for learning and cool things I find on the internet"
+            },
+            {
+                href: "about.html",
+                imgSrc: "images/about.png",
+                alt: "About",
+                text: "Info about me"
+            },
+            {
+                href: "PenguinGame.html",
+                imgSrc: "images/penguin.png",
+                alt: "Walk a Penguin",
+                text: "Walk a Penguin game"
+            },
+            {
+                href: "Poems/poems.html",
+                imgSrc: "images/poems.png",
+                alt: "Favourite Poems",
+                text: "A collection of my favourite poems"
+            },
+            {
+                href: "maze.html",
+                imgSrc: "images/maze.png",
+                alt: "A Maze Ing",
+                text: "An amazing maze game"
+            }
+        ];
+
+        // Positioning logic to avoid overlaps and covering the Welcome section
+        const placedItems = [];
+
+        function placeContentItems() {
+            const contentItemsContainer = document.getElementById('content-items');
+
+            // Get dimensions of the Welcome section to avoid overlapping
+            const welcomeSection = document.getElementById('welcome-section');
+            const welcomeRect = welcomeSection.getBoundingClientRect();
+
+            // Define the area where items can be placed
+            const minY = welcomeRect.bottom + 20; // Start placing items after the Welcome section
+            const maxY = window.innerHeight - 220; // Adjust based on item height
+            const maxAttempts = 1000; // Max attempts to find a non-overlapping position
+
+            contentItems.forEach((item, index) => {
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('content-item');
+
+                // Create the link
+                const link = document.createElement('a');
+                link.href = item.href;
+                link.style.textDecoration = 'none';
+                link.style.color = 'inherit';
+
+                // Create the image
+                const img = document.createElement('img');
+                img.src = item.imgSrc;
+                img.alt = item.alt;
+
+                // Create the text
+                const textDiv = document.createElement('p');
+                textDiv.textContent = item.text;
+
+                // Append elements
+                link.appendChild(img);
+                link.appendChild(textDiv);
+                contentDiv.appendChild(link);
+                contentItemsContainer.appendChild(contentDiv);
+
+                // Position the content items randomly without overlapping
+                let positionFound = false;
+                let attempts = 0;
+                let top, left;
+
+                while (!positionFound && attempts < maxAttempts) {
+                    attempts++;
+                    top = Math.floor(Math.random() * (maxY - minY)) + minY;
+                    left = Math.floor(Math.random() * (window.innerWidth - 220)); // Adjust based on item width
+
+                    const contentRect = {
+                        top: top,
+                        left: left,
+                        width: 200,
+                        height: 220 // Approximate height of content item
+                    };
+
+                    // Check for overlaps
+                    let overlap = false;
+                    for (let placed of placedItems) {
+                        if (
+                            contentRect.left < placed.left + placed.width &&
+                            contentRect.left + contentRect.width > placed.left &&
+                            contentRect.top < placed.top + placed.height &&
+                            contentRect.top + contentRect.height > placed.top
+                        ) {
+                            overlap = true;
+                            break;
+                        }
+                    }
+
+                    if (!overlap) {
+                        positionFound = true;
+                        placedItems.push(contentRect);
+                    }
+                }
+
+                if (positionFound) {
+                    contentDiv.style.top = top + 'px';
+                    contentDiv.style.left = left + 'px';
+                } else {
+                    // If a position isn't found after maxAttempts, place it off-screen to avoid overlap
+                    contentDiv.style.top = (maxY + 100) + 'px';
+                    contentDiv.style.left = '0px';
+                }
+
+                // Animate the content items
+                gsap.fromTo(
+                    contentDiv,
+                    { opacity: 0, scale: 0.5 },
+                    {
+                        opacity: 1,
+                        scale: 1,
+                        duration: 1,
+                        ease: 'elastic.out(1, 0.5)',
+                        delay: index * 0.2
+                    }
+                );
+            });
+        }
+
+        // Wait for the DOM to fully load
+        window.onload = function() {
+            placeContentItems();
+        };
+
+        // Reposition items on window resize
+        window.addEventListener('resize', () => {
+            // Clear existing positions
+            placedItems.length = 0;
+            const contentItemsContainer = document.getElementById('content-items');
+            contentItemsContainer.innerHTML = '';
+            placeContentItems();
+        });
+    </script>
 </body>
 </html>
