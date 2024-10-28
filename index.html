@@ -50,11 +50,14 @@
             margin-top: 80px;
             color: #ffffff;
             text-align: center;
-            z-index: 10;
+            z-index: 15;
             max-width: 800px;
             margin-left: auto;
             margin-right: auto;
-            padding: 20px;
+            padding: 40px 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            /* Added oval shape */
+            border-radius: 50% / 10%;
         }
         #welcome-section img {
             width: 150px;
@@ -95,7 +98,9 @@
         @media (max-width: 768px) {
             #welcome-section {
                 margin-top: 100px;
-                padding: 0 20px;
+                padding: 20px;
+                /* Adjust border-radius for mobile */
+                border-radius: 50% / 15%;
             }
             .navbar a {
                 margin-bottom: 10px;
@@ -152,18 +157,16 @@
             0.1,
             1000
         );
+        camera.position.z = 5;
 
         // Create a renderer
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.domElement.style.position = 'fixed';
         renderer.domElement.style.top = '0';
         renderer.domElement.style.left = '0';
-        renderer.domElement.style.zIndex = '1'; // Lower z-index to allow content over it
+        renderer.domElement.style.zIndex = '5'; // Adjusted z-index
         document.body.appendChild(renderer.domElement);
-
-        // Set camera position
-        camera.position.z = 5;
 
         // Add some ambient light
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -262,6 +265,19 @@
 
         const textureLoader = new THREE.TextureLoader();
 
+        // Variables to determine movement bounds
+        let iconMovementBounds = {
+            minX: -8,
+            maxX: 8,
+            minY: -5,
+            maxY: -1 // Icons stay below the welcome section
+        };
+
+        // Raycaster for detecting mouse movements
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let INTERSECTED;
+
         // Function to display icons
         function displayIcons() {
             iconGroup.clear(); // Remove previous icons
@@ -274,17 +290,16 @@
                 icons = icons.concat(contentItems.slice(0, iconsToDisplay - icons.length));
             }
 
-            icons.forEach((item, index) => {
+            icons.forEach((item) => {
                 textureLoader.load(item.imgSrc, (texture) => {
-                    const material = new THREE.SpriteMaterial({ map: texture });
+                    const material = new THREE.SpriteMaterial({ map: texture, color: 0xffffff });
                     const sprite = new THREE.Sprite(material);
 
-                    // Set position
-                    // Position them at different depths and positions
+                    // Set initial position randomly within bounds
                     sprite.position.set(
-                        (index - 1) * 2, // x position (-2, 0, 2)
-                        0,
-                        -5 - Math.random() * 5 // z position (-5 to -10)
+                        THREE.MathUtils.randFloat(iconMovementBounds.minX, iconMovementBounds.maxX),
+                        THREE.MathUtils.randFloat(iconMovementBounds.minY, iconMovementBounds.maxY),
+                        -5 - Math.random() * 5 // z position
                     );
 
                     // Scale sprite
@@ -294,9 +309,10 @@
                     // Add custom data to sprite
                     sprite.userData = {
                         href: item.href,
+                        defaultScale: scale,
                         velocity: new THREE.Vector3(
-                            (Math.random() - 0.5) * 0.005,
-                            (Math.random() - 0.5) * 0.005,
+                            (Math.random() - 0.5) * 0.01,
+                            (Math.random() - 0.5) * 0.01,
                             0
                         )
                     };
@@ -326,16 +342,20 @@
             displayIcons();
         });
 
-        // Raycaster for detecting clicks
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        function onDocumentClick(event) {
+        // Event listeners for mouse movement
+        function onDocumentMouseMove(event) {
             event.preventDefault();
 
-            // Calculate mouse position in normalized device coordinates (-1 to +1)
+            // Update mouse position
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+        // Event listeners for clicks and touches
+        function onDocumentClick(event) {
+            event.preventDefault();
 
             raycaster.setFromCamera(mouse, camera);
 
@@ -343,11 +363,22 @@
 
             if (intersects.length > 0) {
                 const href = intersects[0].object.userData.href;
-                window.location.href = href;
+
+                // Add press effect (e.g., a small explosion or scale effect)
+                const sprite = intersects[0].object;
+                gsap.to(sprite.scale, {
+                    x: sprite.userData.defaultScale * 1.5,
+                    y: sprite.userData.defaultScale * 1.5,
+                    duration: 0.2,
+                    yoyo: true,
+                    repeat: 1,
+                    onComplete: () => {
+                        window.location.href = href;
+                    }
+                });
             }
         }
 
-        // Add event listeners for clicks and touches
         document.addEventListener('click', onDocumentClick, false);
         document.addEventListener('touchend', function(event) {
             // For touch devices
@@ -372,13 +403,47 @@
                 sprite.position.add(sprite.userData.velocity);
 
                 // Keep icons within bounds
-                if (sprite.position.x > 3 || sprite.position.x < -3) {
+                if (sprite.position.x > iconMovementBounds.maxX || sprite.position.x < iconMovementBounds.minX) {
                     sprite.userData.velocity.x = -sprite.userData.velocity.x;
                 }
-                if (sprite.position.y > 2 || sprite.position.y < -2) {
+                if (sprite.position.y > iconMovementBounds.maxY || sprite.position.y < iconMovementBounds.minY) {
                     sprite.userData.velocity.y = -sprite.userData.velocity.y;
                 }
             });
+
+            // Hover effect
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(iconGroup.children);
+
+            if (intersects.length > 0) {
+                if (INTERSECTED != intersects[0].object) {
+                    if (INTERSECTED) {
+                        // Reset previous icon
+                        gsap.to(INTERSECTED.scale, {
+                            x: INTERSECTED.userData.defaultScale,
+                            y: INTERSECTED.userData.defaultScale,
+                            duration: 0.3
+                        });
+                    }
+                    INTERSECTED = intersects[0].object;
+                    // Enlarge and add glow effect
+                    gsap.to(INTERSECTED.scale, {
+                        x: INTERSECTED.userData.defaultScale * 1.2,
+                        y: INTERSECTED.userData.defaultScale * 1.2,
+                        duration: 0.3
+                    });
+                }
+            } else {
+                if (INTERSECTED) {
+                    // Reset previous icon
+                    gsap.to(INTERSECTED.scale, {
+                        x: INTERSECTED.userData.defaultScale,
+                        y: INTERSECTED.userData.defaultScale,
+                        duration: 0.3
+                    });
+                    INTERSECTED = null;
+                }
+            }
 
             renderer.render(scene, camera);
         }
