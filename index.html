@@ -1,133 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Meta tags and title -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ignasz</title>
-
-    <!-- Include Three.js from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Include GSAP for animations -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/gsap.min.js"></script>
-    <!-- Include the CSS stylesheet -->
     <link rel="stylesheet" href="styles.css">
-    <!-- Include Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Custom styles -->
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Roboto', sans-serif;
-            background-color: #000;
-        }
-        /* Style for the navbar */
-        .navbar {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            padding: 10px 20px;
-            flex-wrap: wrap;
-        }
-        .navbar a {
-            color: #ffffff;
-            text-decoration: none;
-            margin-right: 15px;
-            font-weight: bold;
-            transition: color 0.3s;
-        }
-        .navbar a:hover {
-            color: #fa0101;
-        }
-        /* Style for the welcome section */
-        #welcome-section {
-            position: relative;
-            margin-top: 80px;
-            color: #ffffff;
-            text-align: center;
-            z-index: 15;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-            padding: 40px 20px;
-            background-color: rgba(0, 0, 0, 0.7);
-            /* Added oval shape */
-            border-radius: 50% / 10%;
-        }
-        #welcome-section img {
-            width: 150px;
-            border-radius: 50%;
-            margin-bottom: 20px;
-        }
-        #welcome-section h2 {
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
-        #welcome-section p {
-            font-size: 1.2em;
-            line-height: 1.5em;
-        }
-        /* Style for the controls */
-        #controls {
-            position: fixed;
-            bottom: 20px;
-            width: 100%;
-            text-align: center;
-            z-index: 10;
-        }
-        #controls button {
-            background-color: rgba(0, 0, 0, 0.7);
-            border: none;
-            color: #ffffff;
-            padding: 10px 20px;
-            margin: 0 10px;
-            font-size: 1em;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        #controls button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-        /* Responsive adjustments */
+        body { margin: 0; overflow: hidden; font-family: 'Roboto', sans-serif; background-color: #000; }
+        .navbar { position: fixed; top: 0; width: 100%; background: rgba(0, 0, 0, 0.9); z-index: 10; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; flex-wrap: wrap; }
+        .navbar .nav-links { display: flex; flex-wrap: wrap; }
+        .navbar a { color: #ffffff; text-decoration: none; margin: 0 10px; font-weight: bold; transition: color 0.3s; }
+        .navbar a:hover { color: #fa0101; }
+        .menu-toggle { display: none; cursor: pointer; font-size: 1.5em; color: white; }
+        #welcome-section { position: relative; margin-top: 80px; color: #ffffff; text-align: center; z-index: 15; max-width: 800px; margin-left: auto; margin-right: auto; padding: 40px 20px; background-color: rgba(0, 0, 0, 0.7); border-radius: 20px; }
+        #welcome-section img { width: 150px; border-radius: 50%; margin-bottom: 20px; }
+        #welcome-section h2 { margin-bottom: 20px; font-size: 2em; }
+        #welcome-section p { font-size: 1.2em; line-height: 1.5em; }
+        #controls { position: fixed; bottom: 20px; width: 100%; text-align: center; z-index: 10; }
+        #controls button { background-color: rgba(0, 0, 0, 0.7); border: none; color: #ffffff; padding: 10px 20px; margin: 0 10px; font-size: 1em; cursor: pointer; border-radius: 5px; transition: background-color 0.3s; }
+        #controls button:hover { background-color: rgba(255, 255, 255, 0.2); }
         @media (max-width: 768px) {
-            #welcome-section {
-                margin-top: 100px;
-                padding: 20px;
-                /* Adjust border-radius for mobile */
-                border-radius: 50% / 15%;
-            }
-            .navbar a {
-                margin-bottom: 10px;
-            }
-            #controls button {
-                padding: 8px 16px;
-                font-size: 0.9em;
-            }
+            .navbar { flex-direction: column; align-items: flex-start; }
+            .menu-toggle { display: block; }
+            .nav-links { display: none; flex-direction: column; width: 100%; }
+            .nav-links.active { display: flex; }
+            .navbar a { margin: 10px; }
+            #welcome-section { padding: 20px; border-radius: 15px; }
+            #welcome-section h2 { font-size: 1.5em; }
+            #welcome-section p { font-size: 1em; }
+            #controls button { padding: 8px 16px; font-size: 0.9em; }
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <div class="navbar">
-        <a class="navbar-brand" href="index.html">IgnasZ</a>
-        <a href="philosophy.html">Philosophy</a>
-        <a href="caesarpoem.html">Caesar's Poem</a>
-        <a href="probability.html">Probability Game</a>
-        <a href="gofl.html">Game of Finite Life</a>
-        <a href="PenguinGame.html">Walk a Penguin</a>
-        <a href="Poems/poems.html">Favourite Poems</a>
-        <a href="maze.html">A Maze Ing</a>
-        <a href="learn.html">Learning Materials</a>
-        <a href="about.html">About</a>
+        <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+        <div class="nav-links" id="navLinks">
+            <a class="navbar-brand" href="index.html">IgnasZ</a>
+            <a href="philosophy.html">Philosophy</a>
+            <a href="caesarpoem.html">Caesar's Poem</a>
+            <a href="probability.html">Probability Game</a>
+            <a href="gofl.html">Game of Finite Life</a>
+            <a href="PenguinGame.html">Walk a Penguin</a>
+            <a href="Poems/poems.html">Favourite Poems</a>
+            <a href="maze.html">A Maze Ing</a>
+            <a href="learn.html">Learning Materials</a>
+            <a href="about.html">About</a>
+        </div>
     </div>
-
-    <!-- Welcome Section -->
     <div id="welcome-section">
         <img src="images/me.jpg" alt="Your Name">
         <h2>Welcome</h2>
@@ -137,325 +60,104 @@
             Began in February, 2024.
         </p>
     </div>
-
-    <!-- Controls for cycling through icons -->
     <div id="controls">
         <button id="prev">Previous</button>
         <button id="next">Next</button>
     </div>
-
-    <!-- Three.js scene will be added to the body -->
-    <!-- Main JavaScript code -->
     <script>
-        // Create the scene
-        const scene = new THREE.Scene();
+        function toggleMenu() {
+            const nav = document.getElementById("navLinks");
+            nav.classList.toggle("active");
+        }
 
-        // Create a camera
-        const camera = new THREE.PerspectiveCamera(
-            75,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            1000
-        );
+        const isMobile = window.innerWidth <= 768;
+        const scaleFactor = isMobile ? 2.5 : 1.5;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 5;
 
-        // Create a renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.domElement.style.position = 'fixed';
         renderer.domElement.style.top = '0';
         renderer.domElement.style.left = '0';
-        renderer.domElement.style.zIndex = '5'; // Adjusted z-index
+        renderer.domElement.style.zIndex = '5';
         document.body.appendChild(renderer.domElement);
 
-        // Add some ambient light
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        // Create stars for the background
-        const starsGeometry = new THREE.BufferGeometry();
-        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff });
-        const starVertices = [];
-        for (let i = 0; i < 10000; i++) {
-            const x = THREE.MathUtils.randFloatSpread(2000);
-            const y = THREE.MathUtils.randFloatSpread(2000);
-            const z = THREE.MathUtils.randFloatSpread(2000);
-            starVertices.push(x, y, z);
+        if (!isMobile) {
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+            const starVertices = [];
+            for (let i = 0; i < 10000; i++) {
+                starVertices.push(
+                    THREE.MathUtils.randFloatSpread(2000),
+                    THREE.MathUtils.randFloatSpread(2000),
+                    THREE.MathUtils.randFloatSpread(2000)
+                );
+            }
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
         }
-        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-        const stars = new THREE.Points(starsGeometry, starsMaterial);
-        scene.add(stars);
 
-        // Create a secondary set of stars to appear in front of content items
         const frontStarsGeometry = new THREE.BufferGeometry();
         const frontStarsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.02 });
         const frontStarVertices = [];
-        for (let i = 0; i < 1000; i++) {
-            const x = THREE.MathUtils.randFloatSpread(50);
-            const y = THREE.MathUtils.randFloatSpread(50);
-            const z = THREE.MathUtils.randFloatSpread(50) - 25; // Slightly in front
-            frontStarVertices.push(x, y, z);
+        const frontStarCount = isMobile ? 300 : 1000;
+        for (let i = 0; i < frontStarCount; i++) {
+            frontStarVertices.push(
+                THREE.MathUtils.randFloatSpread(50),
+                THREE.MathUtils.randFloatSpread(50),
+                THREE.MathUtils.randFloatSpread(50) - 25
+            );
         }
         frontStarsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(frontStarVertices, 3));
         const frontStars = new THREE.Points(frontStarsGeometry, frontStarsMaterial);
         scene.add(frontStars);
 
-        // Content items data
-        const contentItems = [
-            {
-                href: "philosophy.html",
-                imgSrc: "images/philosophy.png",
-                alt: "Philosophy",
-                text: "Some of my philosophy essays related to ICTs"
-            },
-            {
-                href: "caesarpoem.html",
-                imgSrc: "images/cypherpoem.png",
-                alt: "Caesar Cipher Poem",
-                text: "Poem Generator with a twist"
-            },
-            {
-                href: "probability.html",
-                imgSrc: "images/probability2.png",
-                alt: "Probability",
-                text: "Probability game where an algorithm will try to guess what you'll press next"
-            },
-            {
-                href: "gofl.html",
-                imgSrc: "images/gofl.png",
-                alt: "Game of Finite Life",
-                text: "Inspired by Conway's Game of Life, my attempt at making a Game of Finite Life (not ready yet)"
-            },
-            {
-                href: "learn.html",
-                imgSrc: "images/learn.png",
-                alt: "Learning",
-                text: "Resources for learning and cool things I find on the internet"
-            },
-            {
-                href: "about.html",
-                imgSrc: "images/about.png",
-                alt: "About",
-                text: "Info about me"
-            },
-            {
-                href: "PenguinGame.html",
-                imgSrc: "images/penguin.png",
-                alt: "Walk a Penguin",
-                text: "Walk a Penguin game"
-            },
-            {
-                href: "Poems/poems.html",
-                imgSrc: "images/poems.png",
-                alt: "Favourite Poems",
-                text: "A collection of my favourite poems"
-            },
-            {
-                href: "maze.html",
-                imgSrc: "images/maze.png",
-                alt: "A Maze Ing",
-                text: "An amazing maze game"
-            }
-        ];
-
+        const contentItems = [];
         let currentIconIndex = 0;
         const iconsToDisplay = 3;
         const iconGroup = new THREE.Group();
         scene.add(iconGroup);
-
         const textureLoader = new THREE.TextureLoader();
 
-        // Variables to determine movement bounds
-        let iconMovementBounds = {
-            minX: -8,
-            maxX: 8,
-            minY: -5,
-            maxY: -1 // Icons stay below the welcome section
-        };
-
-        // Raycaster for detecting mouse movements
+        let iconMovementBounds = { minX: -8, maxX: 8, minY: -5, maxY: -1 };
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         let INTERSECTED;
 
-        // Function to display icons
         function displayIcons() {
-            iconGroup.clear(); // Remove previous icons
-
-            // Get the current set of icons
+            iconGroup.clear();
             let icons = contentItems.slice(currentIconIndex, currentIconIndex + iconsToDisplay);
-
-            // If we're at the end of the array, loop back to the start
             if (icons.length < iconsToDisplay) {
                 icons = icons.concat(contentItems.slice(0, iconsToDisplay - icons.length));
             }
-
             icons.forEach((item) => {
                 textureLoader.load(item.imgSrc, (texture) => {
                     const material = new THREE.SpriteMaterial({ map: texture, color: 0xffffff });
                     const sprite = new THREE.Sprite(material);
-
-                    // Set initial position randomly within bounds
                     sprite.position.set(
                         THREE.MathUtils.randFloat(iconMovementBounds.minX, iconMovementBounds.maxX),
                         THREE.MathUtils.randFloat(iconMovementBounds.minY, iconMovementBounds.maxY),
-                        -5 - Math.random() * 5 // z position
+                        -5 - Math.random() * 5
                     );
-
-                    // Scale sprite
-                    const scale = 1 + Math.random(); // Random scale between 1 and 2
-                    sprite.scale.set(scale, scale, 1);
-
-                    // Add custom data to sprite
+                    sprite.scale.set(scaleFactor, scaleFactor, 1);
                     sprite.userData = {
                         href: item.href,
-                        defaultScale: scale,
-                        velocity: new THREE.Vector3(
-                            (Math.random() - 0.5) * 0.01,
-                            (Math.random() - 0.5) * 0.01,
-                            0
-                        )
+                        defaultScale: scaleFactor,
+                        velocity: new THREE.Vector3((Math.random() - 0.5) * 0.01, (Math.random() - 0.5) * 0.01, 0)
                     };
-
-                    // Add to group
                     iconGroup.add(sprite);
                 });
             });
         }
 
         displayIcons();
-
-        // Event listeners for controls
-        document.getElementById('prev').addEventListener('click', () => {
-            currentIconIndex -= iconsToDisplay;
-            if (currentIconIndex < 0) {
-                currentIconIndex = contentItems.length - iconsToDisplay;
-            }
-            displayIcons();
-        });
-
-        document.getElementById('next').addEventListener('click', () => {
-            currentIconIndex += iconsToDisplay;
-            if (currentIconIndex >= contentItems.length) {
-                currentIconIndex = 0;
-            }
-            displayIcons();
-        });
-
-        // Event listeners for mouse movement
-        function onDocumentMouseMove(event) {
-            event.preventDefault();
-
-            // Update mouse position
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-        }
-
-        document.addEventListener('mousemove', onDocumentMouseMove, false);
-
-        // Event listeners for clicks and touches
-        function onDocumentClick(event) {
-            event.preventDefault();
-
-            raycaster.setFromCamera(mouse, camera);
-
-            const intersects = raycaster.intersectObjects(iconGroup.children);
-
-            if (intersects.length > 0) {
-                const href = intersects[0].object.userData.href;
-
-                // Add press effect (e.g., a small explosion or scale effect)
-                const sprite = intersects[0].object;
-                gsap.to(sprite.scale, {
-                    x: sprite.userData.defaultScale * 1.5,
-                    y: sprite.userData.defaultScale * 1.5,
-                    duration: 0.2,
-                    yoyo: true,
-                    repeat: 1,
-                    onComplete: () => {
-                        window.location.href = href;
-                    }
-                });
-            }
-        }
-
-        document.addEventListener('click', onDocumentClick, false);
-        document.addEventListener('touchend', function(event) {
-            // For touch devices
-            event.clientX = event.changedTouches[0].clientX;
-            event.clientY = event.changedTouches[0].clientY;
-            onDocumentClick(event);
-        }, false);
-
-        // Animation function
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Rotate stars
-            stars.rotation.x += 0.0005;
-            stars.rotation.y += 0.0005;
-
-            frontStars.rotation.x -= 0.0003;
-            frontStars.rotation.y -= 0.0003;
-
-            // Move icons slowly
-            iconGroup.children.forEach((sprite) => {
-                sprite.position.add(sprite.userData.velocity);
-
-                // Keep icons within bounds
-                if (sprite.position.x > iconMovementBounds.maxX || sprite.position.x < iconMovementBounds.minX) {
-                    sprite.userData.velocity.x = -sprite.userData.velocity.x;
-                }
-                if (sprite.position.y > iconMovementBounds.maxY || sprite.position.y < iconMovementBounds.minY) {
-                    sprite.userData.velocity.y = -sprite.userData.velocity.y;
-                }
-            });
-
-            // Hover effect
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(iconGroup.children);
-
-            if (intersects.length > 0) {
-                if (INTERSECTED != intersects[0].object) {
-                    if (INTERSECTED) {
-                        // Reset previous icon
-                        gsap.to(INTERSECTED.scale, {
-                            x: INTERSECTED.userData.defaultScale,
-                            y: INTERSECTED.userData.defaultScale,
-                            duration: 0.3
-                        });
-                    }
-                    INTERSECTED = intersects[0].object;
-                    // Enlarge and add glow effect
-                    gsap.to(INTERSECTED.scale, {
-                        x: INTERSECTED.userData.defaultScale * 1.2,
-                        y: INTERSECTED.userData.defaultScale * 1.2,
-                        duration: 0.3
-                    });
-                }
-            } else {
-                if (INTERSECTED) {
-                    // Reset previous icon
-                    gsap.to(INTERSECTED.scale, {
-                        x: INTERSECTED.userData.defaultScale,
-                        y: INTERSECTED.userData.defaultScale,
-                        duration: 0.3
-                    });
-                    INTERSECTED = null;
-                }
-            }
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
