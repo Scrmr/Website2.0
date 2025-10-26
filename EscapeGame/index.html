@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Predictor Game — Simulation Alignment</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="meter">
+      <div class="meter-labels">
+        <div class="left">
+          <div id="simLabel" class="sim-label">Simulation Alignment</div>
+          <div id="explainLabel" class="explain-label">Algorithm accuracy — how often the algorithm's prediction matched the player's choice</div>
+        </div>
+        <div class="right">
+          <span id="statusLabel" class="status-label">Status: Ongoing</span>
+        </div>
+      </div>
+
+      <div class="meter-bar" aria-hidden="true">
+        <div id="meterFill" class="meter-fill"></div>
+      </div>
+
+      <div class="meter-stats">
+        <span id="accuracyLabel">Accuracy: 0%</span>
+        <span id="statsLabel">Algorithm correct: 0 / 0</span>
+        <span id="roundsLabel">Rounds: 0</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="game">
+      <div class="top-row">
+        <div id="promptArea" class="prompt" aria-live="polite">
+          <div id="promptMain" class="prompt-main">—</div>
+
+          <!-- Choice buttons live with the prompt now (text updates per prompt) -->
+          <div id="promptChoices" class="prompt-choices" role="group" aria-label="Prompt choices">
+            <button id="greenChoiceBtn" class="choice-btn prompt-choice green" aria-pressed="false">Green</button>
+            <button id="redChoiceBtn" class="choice-btn prompt-choice red" aria-pressed="false">Red</button>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="nextPromptBtn">Next Prompt (skip)</button>
+          <button id="resetBtn">Reset Data</button>
+        </div>
+      </div>
+
+      <div class="game-body">
+        <div class="left-panel">
+          <canvas id="mazeCanvas" width="820" height="420" aria-label="Progress maze visualization"></canvas>
+          <div id="mazeHint" class="maze-hint">Maze grows with every choice. Reach a result after 15+ rounds.</div>
+        </div>
+
+        <div class="right-panel">
+          <!-- Old standalone buttons removed to avoid duplicate controls.
+               Keep the diagnostics and end-actions in the right panel. -->
+          <div class="info">
+            <h3>Diagnostics</h3>
+            <div id="diag">No history yet.</div>
+          </div>
+
+          <div class="end-actions" id="endActions" hidden>
+            <button id="continueBtn">Continue Playing (resets thresholds)</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- simple modal -->
+  <div id="resultModal" class="modal" role="dialog" aria-modal="true" hidden>
+    <div class="modal-content">
+      <h2 id="modalTitle">Result</h2>
+      <p id="modalMessage"></p>
+      <div class="modal-actions">
+        <button id="modalReset">Reset Data</button>
+        <button id="modalClose">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

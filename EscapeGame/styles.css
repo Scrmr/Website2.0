@@ -1,0 +1,181 @@
+/* Simple styling for the predictor game with maze visualization */
+
+:root{
+  --bg:#071428;
+  --panel:#0b1220;
+  --accent:#06b6d4;
+  --green:#10b981;
+  --red:#ef4444;
+  --muted:#94a3b8;
+  --text:#e6eef8;
+  --danger:#f97316;
+}
+
+*{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+
+body{
+  margin:0;
+  background:linear-gradient(180deg,#030617 0%, #071428 100%);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.topbar{
+  width:100%;
+  padding:12px 16px;
+  background:rgba(255,255,255,0.02);
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  display:flex;
+  justify-content:center;
+}
+
+.meter{
+  width:100%;
+  max-width:1100px;
+}
+
+.meter-labels{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:8px;
+}
+
+.left{ display:flex; flex-direction:column; gap:2px; }
+.sim-label{ font-weight:700; font-size:15px; color:var(--text); }
+.explain-label{ font-size:12px; color:var(--muted); }
+
+.status-label{ font-size:13px; color:var(--muted); }
+
+.meter-bar{
+  height:14px;
+  background:rgba(255,255,255,0.03);
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.meter-fill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,var(--green), var(--accent));
+  transition:width 350ms ease;
+}
+
+.meter-stats{
+  display:flex;
+  justify-content:space-between;
+  margin-top:8px;
+  color:var(--muted);
+  font-size:13px;
+  gap:12px;
+}
+
+.container{
+  padding:20px 16px;
+  width:100%;
+  max-width:1100px;
+}
+
+.game{
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  padding:18px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.03);
+}
+
+.top-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.prompt{ font-size:18px; color:var(--text); }
+.prompt-main{ font-size:18px; margin-bottom:8px; }
+
+/* Prompt-level choice buttons (replace the old duplicate buttons) */
+.prompt-choices{ display:flex; gap:12px; align-items:center; }
+.prompt-choice{
+  padding:10px 14px;
+  font-weight:700;
+  border-radius:8px;
+  border:0;
+  cursor:pointer;
+  color:white;
+  box-shadow:0 6px 14px rgba(2,6,23,0.6);
+  transition:transform 110ms ease, box-shadow 110ms, opacity 160ms;
+  min-width:140px;
+  text-align:center;
+}
+.prompt-choice:active{ transform:translateY(2px); }
+
+.prompt-choice.green{
+  background:linear-gradient(180deg,var(--green), #059669);
+}
+.prompt-choice.red{
+  background:linear-gradient(180deg,var(--red), #dc2626);
+}
+
+/* Keep .choice-label rules for legacy, but they're not used now */
+.choice-label{ font-weight:700; padding:6px 8px; border-radius:6px; background:rgba(255,255,255,0.02); }
+.choice-label.green{ color:var(--green); border:1px solid rgba(16,185,129,0.14); }
+.choice-label.red{ color:var(--red); border:1px solid rgba(239,68,68,0.14); }
+
+.game-body{ display:flex; gap:16px; align-items:flex-start; }
+
+.left-panel{ flex:1; display:flex; flex-direction:column; gap:8px; }
+.right-panel{ width:300px; display:flex; flex-direction:column; gap:12px; }
+
+canvas{ width:100%; max-width:820px; height:auto; border-radius:8px; background:linear-gradient(180deg,#081223,#051424); box-shadow:0 8px 18px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03); }
+
+.maze-hint{ font-size:12px; color:var(--muted); }
+
+.buttons{
+  display:flex;
+  gap:12px;
+  margin-bottom:6px;
+}
+
+.choice-btn{
+  flex:1;
+  padding:14px 8px;
+  font-size:18px;
+  border-radius:8px;
+  border:0;
+  cursor:pointer;
+  color:white;
+  box-shadow:0 4px 8px rgba(2,6,23,0.6);
+  transition:transform 120ms ease, box-shadow 120ms;
+}
+
+.choice-btn:active{ transform:translateY(2px); }
+
+.green{ background:linear-gradient(180deg,var(--green), #059669); }
+.red{ background:linear-gradient(180deg,var(--red), #dc2626); }
+
+.info{ color:var(--muted); font-size:14px; }
+
+.controls{ display:flex; gap:8px; }
+.controls button{ padding:8px 12px; background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted); border-radius:6px; cursor:pointer; }
+
+.end-actions{ display:flex; gap:8px; margin-top:8px; }
+.end-actions button{ padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:var(--muted); cursor:pointer; }
+
+.modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(2,6,23,0.6); z-index:60; }
+.modal-content{ background:var(--panel); padding:20px; border-radius:10px; width:90%; max-width:420px; border:1px solid rgba(255,255,255,0.03); color:var(--text); }
+.modal-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+.modal-actions button{ padding:8px 12px; border-radius:6px; border:0; cursor:pointer; }
+#modalReset{ background:var(--danger); color:white; }
+#modalClose{ background:rgba(255,255,255,0.04); color:var(--text); }
+
+@media (max-width:860px){
+  .game-body{ flex-direction:column; }
+  .right-panel{ width:100%; }
+  .prompt-choices{ flex-direction:column; }
+  .prompt-choice{ min-width:unset; width:100%; }
+}
