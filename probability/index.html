@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Probability Game — IgnasZ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .topbar {
+            background: #0a0a0a;
+            border-bottom: 1px solid #1e1e1e;
+            padding: 12px 20px;
+        }
+        .topbar a {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        .topbar a:hover { color: #e0e0e0; }
+        .page-header {
+            padding: 32px 20px 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .page-header h1 { font-size: 1.6rem; margin-bottom: 8px; }
+        .page-header p { color: #888; font-size: 0.9rem; }
+        .main-content { max-width: 800px; margin: 0 auto; padding: 0 20px 60px; }
+        .card { background: #111; border: 1px solid #1e1e1e; border-radius: 10px; }
+        .card-title { color: #e0e0e0; }
+        .card-text, .card-body p { color: #aaa; }
+        .btn-primary { background: #333; border-color: #444; color: #e0e0e0; }
+        .btn-primary:hover { background: #444; border-color: #555; }
+        .btn-secondary { background: #1a1a1a; border-color: #333; color: #e0e0e0; font-size: 1.2rem; padding: 10px 28px; }
+        .btn-secondary:hover { background: #2a2a2a; border-color: #444; }
+        #buttonPressCounter { color: #aaa; font-size: 0.9rem; }
+        span[id$="Accuracy"] { font-weight: 600; color: #e0e0e0; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a href="../index.html">← IgnasZ</a>
+    </div>
+
+    <div class="page-header">
+        <h1>Probability Game</h1>
+        <p>
+            Inspired by Aaron's Oracle — a Markov Chain and N-Gram model tries to predict your next input.
+            Press <kbd>A</kbd> or <kbd>D</kbd>. Try to be unpredictable. Can you stay below 50% after 100 presses?
+        </p>
+        <p style="color:#666;font-size:0.85rem;">
+            Both models are Markov Chains; the N-Gram has shorter memory and is usually less accurate.
+        </p>
+    </div>
+
+    <div class="main-content">
+        <div class="my-4 text-center">
+            <div id="buttonPressCounter" class="mb-3">
+                Button Presses: <strong><span id="buttonPressCount">0</span></strong>
+                <button id="resetButton" class="btn btn-primary btn-sm ms-3">Reset</button>
+            </div>
+            <div class="btn-group" role="group">
+                <button id="buttonA" class="btn btn-secondary">A</button>
+                <button id="buttonD" class="btn btn-secondary">D</button>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <p class="mb-1" style="color:#666;font-size:0.85rem;">Accuracy of the models' predictions:</p>
+            <p class="mb-1">N-Gram: <span id="nGramAccuracy">0%</span></p>
+            <p class="mb-0">Markov: <span id="markovAccuracy">0%</span></p>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title h5">N-Gram Prediction</h2>
+                        <p class="card-text">Prediction: <span id="nGramGuess">—</span> | You: <span id="nGramUser"></span></p>
+                        <div id="nGramHistory" style="font-size:0.8rem;color:#666;max-height:200px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title h5">Markov Prediction</h2>
+                        <p class="card-text">Prediction: <span id="markovGuess">—</span> | You: <span id="markovUser"></span></p>
+                        <div id="markovHistory" style="font-size:0.8rem;color:#666;max-height:200px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="probability.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

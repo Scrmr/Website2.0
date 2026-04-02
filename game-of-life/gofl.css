@@ -1,0 +1,8 @@
+#canvas-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh; /* Adjust height as necessary */
+    width: 100%; /* Take full width */
+    margin-top: 20px; /* Optional: to provide some space from the top elements */
+}

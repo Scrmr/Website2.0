@@ -3,203 +3,162 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ignasz</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <title>IgnasZ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: 'Roboto', sans-serif;
-      background-color: #000;
-      color: white;
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
     }
-    .navbar {
-      position: fixed;
-      top: 0;
-      width: 100%;
-      background: rgba(0, 0, 0, 0.9);
-      z-index: 10;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      flex-wrap: wrap;
-    }
-    .navbar .nav-links {
-      display: flex;
-      flex-wrap: wrap;
-    }
-    .navbar a {
-      color: #ffffff;
-      text-decoration: none;
-      margin: 0 10px;
-      font-weight: bold;
-      transition: color 0.3s;
-    }
-    .navbar a:hover {
-      color: #fa0101;
-    }
-    .menu-toggle {
-      display: none;
-      cursor: pointer;
-      font-size: 1.5em;
-      color: white;
-    }
-    #welcome-section {
-      margin-top: 80px;
+
+    /* ── Header ── */
+    header {
+      padding: 60px 24px 40px;
       text-align: center;
-      padding: 40px 20px;
-      background-color: rgba(0, 0, 0, 0.7);
-      border-radius: 20px;
-      max-width: 800px;
-      margin-left: auto;
-      margin-right: auto;
+      max-width: 560px;
+      margin: 0 auto;
     }
-    #welcome-section img {
-      width: 150px;
+    header img {
+      width: 96px;
+      height: 96px;
       border-radius: 50%;
+      object-fit: cover;
       margin-bottom: 20px;
+      border: 2px solid #222;
     }
-    .icon-grid {
+    header h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      margin: 0 0 14px;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      font-size: 0.92rem;
+      color: #777;
+      line-height: 1.75;
+      margin: 0;
+    }
+
+    /* ── Projects section ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      color: #444;
+      margin: 0 0 18px;
+    }
+    .projects {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 20px;
-      max-width: 1000px;
-      margin: 40px auto;
-      padding: 0 20px;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 14px;
     }
-    .icon-grid-item {
-      text-align: center;
-    }
-    .icon-grid-item img {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      border-radius: 10px;
-      background-color: #111;
-      padding: 10px;
-      transition: transform 0.2s;
-    }
-    .icon-grid-item img:hover {
-      transform: scale(1.1);
-    }
-    .icon-grid-item a {
+
+    /* ── Card ── */
+    .card {
+      background: #111;
+      border: 1px solid #1c1c1c;
+      border-radius: 12px;
+      padding: 22px 20px;
       text-decoration: none;
-      color: white;
-      font-weight: bold;
-      display: block;
-      margin-top: 10px;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.2s, transform 0.15s;
     }
-    @media (max-width: 768px) {
-      .navbar {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .menu-toggle {
-        display: block;
-      }
-      .nav-links {
-        display: none;
-        flex-direction: column;
-        width: 100%;
-      }
-      .nav-links.active {
-        display: flex;
-      }
-      .navbar a {
-        margin: 10px;
-      }
+    .card:hover {
+      border-color: #383838;
+      transform: translateY(-3px);
+    }
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    .card h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e0e0e0;
+    }
+    .card p {
+      margin: 0;
+      font-size: 0.82rem;
+      color: #5a5a5a;
+      line-height: 1.55;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #2a2a2a;
+      font-size: 0.78rem;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 480px) {
+      header { padding: 40px 20px 28px; }
+      header h1 { font-size: 1.5rem; }
+      .projects { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="navbar">
-    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
-    <div class="nav-links" id="navLinks">
-      <a href="index.html">IgnasZ</a>
-      <a href="philosophy.html">Philosophy</a>
-      <a href="caesarpoem.html">Caesar's Poem</a>
-      <a href="probability.html">Probability Game</a>
-      <a href="gofl.html">Game of Finite Life</a>
-      <a href="PenguinGame.html">Walk a Penguin</a>
-      <a href="Poems/poems.html">Favourite Poems</a>
-      <a href="maze.html">A Maze Ing</a>
-      <a href="learn.html">Learning Materials</a>
-      <a href="about.html">About</a>
-    </div>
-  </div>
 
-  <div id="welcome-section">
-    <img src="images/me.jpg" alt="Your Name">
-    <h2>Welcome</h2>
+  <header>
+    <img src="images/me.jpg" alt="Ignas">
+    <h1>IgnasZ</h1>
     <p>
-      I use this website to record what I learn in my spare time, mostly in topics of philosophy, AI, and information technologies more generally.<br>
-      Most of it will be displayed in the form of small projects—if something doesn't work, it's probably because I'm still working on it.<br>
-      Began in February, 2024.
+      I use this site to record what I learn in my spare time — mostly philosophy, AI,
+      and information technology. Projects here are small experiments; if something
+      doesn't work, I'm probably still building it.
     </p>
-  </div>
+  </header>
 
-  <div class="icon-grid">
-    <div class="icon-grid-item">
-      <a href="philosophy.html">
-        <img src="images/philosophy.png" alt="Philosophy">
-        Philosophy
-      </a>
-    </div>
-    <div class="icon-grid-item">
-      <a href="caesarpoem.html">
-        <img src="images/cypherpoem.png" alt="Caesar Cipher Poem">
-        Caesar's Poem
-      </a>
-    </div>
-    <div class="icon-grid-item">
-      <a href="probability.html">
-        <img src="images/probability2.png" alt="Probability">
-        Probability Game
-      </a>
-    </div>
-    <div class="icon-grid-item">
-      <a href="gofl.html">
-        <img src="images/gofl.png" alt="Game of Finite Life">
-        Game of Finite Life
-      </a>
-    </div>
-    <div class="icon-grid-item">
-      <a href="learn.html">
-        <img src="images/learn.png" alt="Learning">
-        Learning Materials
-      </a>
-    </div>
-    <div class="icon-grid-item">
-      <a href="about.html">
-        <img src="images/about.png" alt="About">
-        About
-      </a>
-    </div>
-    <div class="icon-grid-item">
-      <a href="PenguinGame.html">
-        <img src="images/penguin.png" alt="Walk a Penguin">
-        Walk a Penguin
-      </a>
-    </div>
-    <div class="icon-grid-item">
-      <a href="Poems/poems.html">
-        <img src="images/poems.png" alt="Favourite Poems">
-        Favourite Poems
-      </a>
-    </div>
-    <div class="icon-grid-item">
-      <a href="maze.html">
-        <img src="images/maze.png" alt="A Maze Ing">
-        A Maze Ing
-      </a>
-    </div>
-  </div>
+  <main>
+    <p class="section-label">Projects</p>
+    <div class="projects">
 
-  <script>
-    function toggleMenu() {
-      const nav = document.getElementById("navLinks");
-      nav.classList.toggle("active");
-    }
-  </script>
+      <a class="card" href="Sisyphus/index.html">
+        <img class="card-icon" src="Sisyphus/images/angel.png" alt="Sisyphus">
+        <h3>Sisyphus</h3>
+        <p>An interactive cryptic poem game with choices and consequences.</p>
+      </a>
+
+      <a class="card" href="game-of-life/index.html">
+        <img class="card-icon" src="images/gofl.png" alt="Game of Life">
+        <h3>Game of Life</h3>
+        <p>Two-player Conway's Game of Life — draw cells and watch them compete.</p>
+      </a>
+
+      <a class="card" href="probability/index.html">
+        <img class="card-icon" src="images/probability2.png" alt="Probability Game">
+        <h3>Probability Game</h3>
+        <p>A Markov chain and N-gram model try to predict your next move.</p>
+      </a>
+
+      <a class="card" href="caesar-poem/index.html">
+        <img class="card-icon" src="images/cypherpoem.png" alt="Caesar's Poem">
+        <h3>Caesar's Poem</h3>
+        <p>Generate a poem, then decrypt the hidden words.</p>
+      </a>
+
+    </div>
+  </main>
+
+  <footer>Started February 2024</footer>
+
 </body>
 </html>
