@@ -1,0 +1,14 @@
+runtime: nodejs20
+env: standard
+instance_class: F1
+
+automatic_scaling:
+  min_idle_instances: 0
+  max_idle_instances: automatic
+
+env_variables:
+  OPENAI_API_KEY: "REPLACE_WITH_YOUR_KEY"
+
+handlers:
+- url: /.*
+  script: auto

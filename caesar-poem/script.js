@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', (event) => {
+document.addEventListener('DOMContentLoaded', () => {
  
   const wordInput = document.getElementById('word-input');
  
@@ -53,7 +53,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
     userInput = `Generate a poem about: ${userInput}`;
 
       try {
-        const response = await fetch('https://cypherpoem.ew.r.appspot.com/generate-poem', {
+        const apiBase = window.location.protocol === 'file:' || window.location.hostname === 'localhost'
+          ? 'http://localhost:8080'
+          : 'https://poemgenerator-492211.appspot.com';
+        const response = await fetch(`${apiBase}/generate-poem`, {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
