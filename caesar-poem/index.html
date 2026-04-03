@@ -8,26 +8,29 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; }
+
         body {
             font-family: 'Inter', sans-serif;
             background: #0a0a0a;
             color: #e0e0e0;
             min-height: 100vh;
         }
+
+        /* ── Top bar ── */
         .topbar {
             background: #0a0a0a;
             border-bottom: 1px solid #1e1e1e;
             padding: 12px 20px;
         }
-        .topbar a {
-            color: #888;
-            text-decoration: none;
-            font-size: 0.85rem;
-        }
+        .topbar a { color: #888; text-decoration: none; font-size: 0.85rem; }
         .topbar a:hover { color: #e0e0e0; }
+
+        /* ── Layout ── */
         .main-content { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
         h1 { font-size: 1.6rem; margin-bottom: 8px; }
         .lead { color: #888; font-size: 0.9rem; }
+
+        /* ── Input ── */
         textarea.form-control {
             background: #111;
             border: 1px solid #2a2a2a;
@@ -52,23 +55,81 @@
             color: #e0e0e0;
             border-radius: 8px;
         }
-        .btn-primary:hover { background: #444; border-color: #555; }
+        .btn-primary:hover:not(:disabled) { background: #444; border-color: #555; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Poem ── */
         #poem-container {
             margin-top: 24px;
-            line-height: 2.2;
+            line-height: 2.4;
             font-size: 1.05rem;
             min-height: 60px;
         }
+
+        /* Encrypted word — shown scrambled, clickable */
         .encrypted {
-            background-color: #1e3a5f;
+            background: #1e3a5f;
             color: #7bb8f5;
             border-radius: 4px;
-            padding: 1px 4px;
+            padding: 1px 5px;
             cursor: pointer;
             border-bottom: 2px dashed #7bb8f5;
-            transition: background 0.2s;
+            transition: background 0.15s;
+            font-family: monospace;
         }
-        .encrypted:hover { background-color: #2a5080; }
+        .encrypted:hover { background: #2a5080; }
+
+        /* Wrong guess flash */
+        .wrong {
+            background: #5f1e1e !important;
+            color: #f57b7b !important;
+            border-bottom-color: #f57b7b !important;
+        }
+
+        /* Correctly solved word */
+        .solved {
+            background: #1a3d2b;
+            color: #6fcf97;
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+
+        /* Revealed after running out of guesses */
+        .revealed {
+            background: #2a2a2a;
+            color: #888;
+            border-radius: 4px;
+            padding: 1px 5px;
+            text-decoration: line-through;
+        }
+
+        /* ── Guess tracker ── */
+        .guess-tracker {
+            margin-top: 20px;
+            font-size: 0.88rem;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .guess-tracker.low { color: #f57b7b; }
+
+        .tracker-label { margin-right: 4px; }
+
+        .pip {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .pip-on  { background: #7bb8f5; }
+        .pip-off { background: #2a2a2a; border: 1px solid #444; }
+        .guess-tracker.low .pip-on { background: #f57b7b; }
+
+        .tracker-win  { color: #6fcf97; font-weight: 600; }
+        .tracker-loss { color: #f57b7b; }
+
         kbd { background: #1a1a1a; color: #aaa; border: 1px solid #333; }
     </style>
 </head>
@@ -79,8 +140,8 @@
 
     <div class="main-content">
         <h1>Caesar's Poem</h1>
-        <p class="lead">Generate a poem, then click the highlighted words to decrypt them.</p>
-        <p style="color:#555;font-size:0.85rem;">Cipher key: <kbd>A B C D E F G H I J K L M N O P Q R S T U V W X Y Z</kbd></p>
+        <p class="lead">Generate a poem, then click the highlighted words to decrypt them. You have 10 guesses.</p>
+        <p style="color:#555;font-size:0.85rem;">Cipher key (shift 3): <kbd>A→D B→E C→F …</kbd></p>
 
         <div class="input-group mb-3">
             <span class="input-group-text" id="input-prefix">Poem about:</span>
@@ -94,8 +155,9 @@
                 rows="2"
             ></textarea>
         </div>
-        <button id="generate-btn" class="btn btn-primary mb-4">Generate Poem</button>
+        <button id="generate-btn" class="btn btn-primary mb-2">Generate Poem</button>
 
+        <div id="guess-tracker" class="guess-tracker"></div>
         <div id="poem-container"></div>
     </div>
 
