@@ -133,3 +133,65 @@ export class ValidationResult {
   static ok()         { return new ValidationResult(true, []); }
   static fail(errors) { return new ValidationResult(false, errors); }
 }
+
+// ── Pre-made placement patterns ───────────────────────────────────────────────
+// cells: relative [row, col] offsets from the top-left of the bounding box.
+// mirrorForBlue: when true, the pattern is flipped horizontally for Blue so it
+//   faces toward Red (the opponent on the left).
+
+export const PATTERNS = [
+  {
+    id:           'block',
+    name:         'Block',
+    tag:          'Stable',
+    tagColor:     '#6fcf97',
+    desc:         'Solid 2×2 square. Reliable anchor point.',
+    cells:        [[0,0],[0,1],[1,0],[1,1]],
+    mirrorForBlue: false,
+  },
+  {
+    id:           'blinker',
+    name:         'Blinker',
+    tag:          'Pulse',
+    tagColor:     '#f2994a',
+    desc:         'Vertical 3-cell line that oscillates every generation.',
+    cells:        [[0,0],[1,0],[2,0]],
+    mirrorForBlue: false,
+  },
+  {
+    id:           'beehive',
+    name:         'Beehive',
+    tag:          'Stable',
+    tagColor:     '#6fcf97',
+    desc:         'Compact 6-cell stable cluster.',
+    cells:        [[0,1],[0,2],[1,0],[1,3],[2,1],[2,2]],
+    mirrorForBlue: false,
+  },
+  {
+    id:           'glider',
+    name:         'Glider',
+    tag:          'Mover',
+    tagColor:     '#e84040',
+    desc:         '5-cell diagonal traveller. Mirrored for Blue so it faces Red.',
+    cells:        [[0,1],[1,2],[2,0],[2,1],[2,2]],
+    mirrorForBlue: true,
+  },
+  {
+    id:           'rpent',
+    name:         'R-pentomino',
+    tag:          'Chaos',
+    tagColor:     '#bb6bd9',
+    desc:         '5-cell chaotic growth — unpredictable and explosive.',
+    cells:        [[0,1],[0,2],[1,0],[1,1],[2,1]],
+    mirrorForBlue: true,
+  },
+  {
+    id:           'toad',
+    name:         'Toad',
+    tag:          'Pulse',
+    tagColor:     '#f2994a',
+    desc:         '6-cell period-2 oscillator with an alternating shape.',
+    cells:        [[0,1],[0,2],[0,3],[1,0],[1,1],[1,2]],
+    mirrorForBlue: false,
+  },
+];

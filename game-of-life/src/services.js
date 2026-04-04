@@ -75,7 +75,11 @@ export class CompetitiveLifeRuleEngine {
 // ── IPlacementValidator ───────────────────────────────────────────────────────
 
 export class StandardPlacementValidator {
-  validate(color, positions, board, phase, settings, regionPolicy) {
+  /**
+   * @param maxOverride  When provided (banking), overrides the reinforcement
+   *                     max from settings. Pass null to use settings default.
+   */
+  validate(color, positions, board, phase, settings, regionPolicy, maxOverride = null) {
     const errors  = [];
     const isSetup = phase === MatchPhase.SETUP_PLACEMENT;
 
@@ -87,12 +91,13 @@ export class StandardPlacementValidator {
         );
       }
     } else {
+      const max = maxOverride ?? settings.reinforcementMaxPlacementCount;
       if (positions.length < settings.reinforcementMinPlacementCount) {
         errors.push(
           `Place at least ${settings.reinforcementMinPlacementCount} cells (you have ${positions.length})`
         );
-      } else if (positions.length > settings.reinforcementMaxPlacementCount) {
-        errors.push(`Cannot place more than ${settings.reinforcementMaxPlacementCount} cells`);
+      } else if (positions.length > max) {
+        errors.push(`Cannot place more than ${max} cells (your budget this round)`);
       }
     }
 

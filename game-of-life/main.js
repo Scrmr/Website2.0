@@ -10,49 +10,124 @@ import { PlacementSubmissionService, MatchFlowCoordinator } from './src/applicat
 import { GameRenderer }                                     from './src/renderer.js';
 import { LocalMatchController }                             from './src/controller.js';
 
+// ── Screens ───────────────────────────────────────────────────────────────────
+
+const settingsScreen = document.getElementById('settings-screen');
+const gameScreen     = document.getElementById('game-screen');
+
+function showSettings() {
+  gameScreen.style.display     = 'none';
+  settingsScreen.style.display = 'block';
+}
+
+function showGame() {
+  settingsScreen.style.display = 'none';
+  gameScreen.style.display     = 'block';
+}
+
+// ── Settings reading ──────────────────────────────────────────────────────────
+
+const GRID_PRESETS = {
+  small:  { boardWidth: 30, boardHeight: 18 },
+  medium: { boardWidth: 40, boardHeight: 24 },
+  large:  { boardWidth: 56, boardHeight: 32 },
+};
+
+const SPEED_PRESETS = {
+  slow:   280,
+  normal: 140,
+  fast:   60,
+  blitz:  25,
+};
+
+function readSettings() {
+  const grid  = GRID_PRESETS[document.querySelector('.opt-grid.active')?.dataset.val  ?? 'medium'];
+  const speed = SPEED_PRESETS[document.querySelector('.opt-speed.active')?.dataset.val ?? 'normal'];
+  const gens  = parseInt(document.querySelector('.opt-gens.active')?.dataset.val ?? '250', 10);
+
+  const setupCells = clamp(parseInt(document.getElementById('s-setup').value,  10), 1, 30);
+  const reinMin    = clamp(parseInt(document.getElementById('s-rmin').value,   10), 1, 20);
+  const reinMax    = clamp(parseInt(document.getElementById('s-rmax').value,   10), reinMin, 40);
+
+  return new GameSettings({
+    ...grid,
+    initialPlacementCount:           setupCells,
+    reinforcementMinPlacementCount:  reinMin,
+    reinforcementMaxPlacementCount:  reinMax,
+    simulationStepMs:                speed,
+    maxGenerations:                  gens,
+  });
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// ── Toggle-button groups ──────────────────────────────────────────────────────
+
+function setupToggleGroup(selector) {
+  document.querySelectorAll(selector).forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll(selector).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+}
+
+setupToggleGroup('.opt-grid');
+setupToggleGroup('.opt-speed');
+setupToggleGroup('.opt-gens');
+
+// ── Game lifecycle ────────────────────────────────────────────────────────────
+
 let activeController = null;
 
-function startGame() {
-  // Cleanly tear down any running game before starting a new one
+function startGame(settings) {
   if (activeController) activeController.detach();
 
-  const settings = new GameSettings();
-  const match    = new Match(settings);
-
-  // Domain services
-  const engine       = new CompetitiveLifeRuleEngine();
-  const region       = new HalfBoardPlacementRegionPolicy();
-  const validator    = new StandardPlacementValidator();
-  const winEval      = new StandardWinConditionEvaluator();
+  const match       = new Match(settings);
+  const engine      = new CompetitiveLifeRuleEngine();
+  const region      = new HalfBoardPlacementRegionPolicy();
+  const validator   = new StandardPlacementValidator();
+  const winEval     = new StandardWinConditionEvaluator();
   const statsService = new BoardStatisticsService();
+  const subs        = new PlacementSubmissionService();
 
-  // Application layer
-  const subs  = new PlacementSubmissionService();
   const coord = new MatchFlowCoordinator(
     match, subs, validator, engine, winEval, statsService, region
   );
 
-  // Presentation layer
   const canvas   = document.getElementById('game-canvas');
   const renderer = new GameRenderer(canvas, settings);
   const ctrl     = new LocalMatchController(coord, renderer, settings);
 
   ctrl.attach(canvas, {
-    genCounter: document.getElementById('gen-counter'),
-    phaseLabel: document.getElementById('phase-label'),
-    redCells:   document.getElementById('red-cells'),
-    redPlaced:  document.getElementById('red-placed'),
-    redReady:   document.getElementById('red-ready'),
-    redError:   document.getElementById('red-error'),
-    blueCells:  document.getElementById('blue-cells'),
-    bluePlaced: document.getElementById('blue-placed'),
-    blueReady:  document.getElementById('blue-ready'),
-    blueError:  document.getElementById('blue-error'),
-    newGame:    document.getElementById('new-game'),
+    genCounter:  document.getElementById('gen-counter'),
+    phaseLabel:  document.getElementById('phase-label'),
+    redCells:    document.getElementById('red-cells'),
+    redPlaced:   document.getElementById('red-placed'),
+    redBank:     document.getElementById('red-bank'),
+    redReady:    document.getElementById('red-ready'),
+    redError:    document.getElementById('red-error'),
+    redPatterns: document.getElementById('red-patterns'),
+    blueCells:   document.getElementById('blue-cells'),
+    bluePlaced:  document.getElementById('blue-placed'),
+    blueBank:    document.getElementById('blue-bank'),
+    blueReady:   document.getElementById('blue-ready'),
+    blueError:   document.getElementById('blue-error'),
+    bluePatterns:document.getElementById('blue-patterns'),
+    newGame:     document.getElementById('new-game'),
   });
 
-  ctrl.onNewGame(startGame);
+  ctrl.onNewGame(() => {
+    if (activeController) activeController.detach();
+    showSettings();
+  });
+
   activeController = ctrl;
 }
 
-startGame();
+// ── Start button ──────────────────────────────────────────────────────────────
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  showGame();
+  startGame(readSettings());
+});

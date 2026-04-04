@@ -2,12 +2,6 @@ import { PlayerColor, MatchPhase, MatchResultType } from './domain.js';
 
 // ── PlacementSubmissionService ────────────────────────────────────────────────
 
-/**
- * Stores each player's pending placement draft and ready state.
- * The authoritative board is NOT mutated until both players are ready.
- * This model supports future online multiplayer: each player submits
- * independently and the system resolves once both are locked in.
- */
 export class PlacementSubmissionService {
   constructor() { this._reset(); }
 
@@ -16,39 +10,22 @@ export class PlacementSubmissionService {
     this._ready       = { [PlayerColor.RED]: false, [PlayerColor.BLUE]: false };
   }
 
-  /** Replace a player's draft. Resets their ready state. */
   submit(color, positions) {
     this._submissions[color] = [...positions];
     this._ready[color]       = false;
   }
 
-  setReady(color)    { this._ready[color] = true; }
-  cancelReady(color) { this._ready[color] = false; }
-  isReady(color)     { return this._ready[color]; }
-  bothReady()        { return this._ready[PlayerColor.RED] && this._ready[PlayerColor.BLUE]; }
+  setReady(color)      { this._ready[color] = true; }
+  cancelReady(color)   { this._ready[color] = false; }
+  isReady(color)       { return this._ready[color]; }
+  bothReady()          { return this._ready[PlayerColor.RED] && this._ready[PlayerColor.BLUE]; }
   getSubmission(color) { return [...this._submissions[color]]; }
-  clear()            { this._reset(); }
+  clear()              { this._reset(); }
 }
 
 // ── MatchFlowCoordinator ──────────────────────────────────────────────────────
 
-/**
- * Orchestrates phase transitions:
- *   SetupPlacement → Simulation → ReinforcementPlacement → Simulation → … → Ended
- *
- * Depends on abstractions (interfaces), not concrete implementations.
- * The simulation loop is async so the UI can animate each generation.
- */
 export class MatchFlowCoordinator {
-  /**
-   * @param {Match}                      match
-   * @param {PlacementSubmissionService} submissionService
-   * @param {StandardPlacementValidator} validator
-   * @param {CompetitiveLifeRuleEngine}  ruleEngine
-   * @param {StandardWinConditionEvaluator} winEvaluator
-   * @param {BoardStatisticsService}     statsService
-   * @param {HalfBoardPlacementRegionPolicy} regionPolicy
-   */
   constructor(match, submissionService, validator, ruleEngine, winEvaluator, statsService, regionPolicy) {
     this._match    = match;
     this._subs     = submissionService;
@@ -59,30 +36,42 @@ export class MatchFlowCoordinator {
     this._region   = regionPolicy;
     this._onUpdate = null;
     this._disposed = false;
+
+    // Banking: cells carried over from previous rounds (after storage tax).
+    this._banks = { [PlayerColor.RED]: 0, [PlayerColor.BLUE]: 0 };
   }
 
   get match() { return this._match; }
 
-  /** Register a callback that fires whenever match state changes. */
   onUpdate(fn) { this._onUpdate = fn; }
 
-  /**
-   * Dispose this coordinator so stale async simulation loops become no-ops.
-   * Call before creating a new game.
-   */
   dispose() {
     this._disposed = true;
     this._onUpdate = null;
   }
 
-  isReady(color)    { return this._subs.isReady(color); }
-  getDraft(color)   { return this._subs.getSubmission(color); }
-  getStats()        { return this._stats.getStatistics(this._match.board); }
+  isReady(color)  { return this._subs.isReady(color); }
+  getDraft(color) { return this._subs.getSubmission(color); }
+  getStats()      { return this._stats.getStatistics(this._match.board); }
 
   /**
-   * Update a player's draft without locking them in.
-   * Returns { success: boolean, errors?: string[] }.
+   * The maximum cells a player may place this round (base max + banked cells).
+   * During setup the count is exact (initialPlacementCount), not a bank-adjusted max.
    */
+  getMaxPlaceable(color) {
+    if (this._match.phase === MatchPhase.SETUP_PLACEMENT) {
+      return this._match.settings.initialPlacementCount;
+    }
+    return this._match.settings.reinforcementMaxPlacementCount + this._banks[color];
+  }
+
+  getBank(color) { return this._banks[color]; }
+
+  /** Whether pos is within color's allowed placement region. */
+  isInPlayerRegion(color, pos) {
+    return this._region.canPlace(color, pos, this._match.board, this._match.settings);
+  }
+
   updateDraft(color, positions) {
     if (!this._isPlacementPhase()) {
       return { success: false, errors: ['Not in a placement phase'] };
@@ -92,19 +81,17 @@ export class MatchFlowCoordinator {
     return { success: true };
   }
 
-  /**
-   * Lock a player in with their current draft.
-   * Validates the draft first. If both players are now ready, commits placements
-   * and starts the simulation block.
-   */
   setReady(color) {
     if (!this._isPlacementPhase()) {
       return { success: false, errors: ['Not in a placement phase'] };
     }
-    const draft  = this._subs.getSubmission(color);
+    const draft      = this._subs.getSubmission(color);
+    const maxOverride = this._match.phase === MatchPhase.REINFORCEMENT_PLACEMENT
+      ? this.getMaxPlaceable(color)
+      : null;
     const result = this._validator.validate(
       color, draft, this._match.board,
-      this._match.phase, this._match.settings, this._region
+      this._match.phase, this._match.settings, this._region, maxOverride
     );
     if (!result.isValid) return { success: false, errors: result.errors };
 
@@ -115,7 +102,6 @@ export class MatchFlowCoordinator {
     return { success: true };
   }
 
-  /** Un-lock a player (only allowed outside the simulation phase). */
   cancelReady(color) {
     if (this._match.phase === MatchPhase.SIMULATION) return;
     this._subs.cancelReady(color);
@@ -129,10 +115,14 @@ export class MatchFlowCoordinator {
     return p === MatchPhase.SETUP_PLACEMENT || p === MatchPhase.REINFORCEMENT_PLACEMENT;
   }
 
-  /** Atomically apply both players' placements, then start simulation. */
   _commitAndSimulate() {
     const redPos  = this._subs.getSubmission(PlayerColor.RED);
     const bluePos = this._subs.getSubmission(PlayerColor.BLUE);
+
+    // Banking update must happen BEFORE clearing submissions so placed counts are known.
+    if (this._match.phase === MatchPhase.REINFORCEMENT_PLACEMENT) {
+      this._updateBanks(redPos.length, bluePos.length);
+    }
 
     const placements = [
       ...redPos.map(pos  => ({ pos, state: 'red' })),
@@ -147,10 +137,23 @@ export class MatchFlowCoordinator {
   }
 
   /**
-   * Runs one simulation block (simulationBlockSize generations) asynchronously,
-   * emitting an update after each generation so the UI can animate.
-   * Checks for disposal at each step so restarting a game is safe.
+   * Apply storage tax and add savings to each player's bank.
+   * Rule: save N cells → bank += N - 1  (flat 1-cell storage tax per round saved).
+   * Saving exactly 1 cell nets nothing (the tax consumes it).
    */
+  _updateBanks(redPlaced, bluePlaced) {
+    for (const [color, placed] of [
+      [PlayerColor.RED,  redPlaced],
+      [PlayerColor.BLUE, bluePlaced],
+    ]) {
+      const max   = this.getMaxPlaceable(color); // includes current bank before update
+      const saved = max - placed;
+      if (saved > 0) {
+        this._banks[color] = Math.max(0, this._banks[color] + saved - 1);
+      }
+    }
+  }
+
   async _runSimulation() {
     const { simulationBlockSize, simulationStepMs } = this._match.settings;
 
