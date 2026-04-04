@@ -1,6 +1,7 @@
 import { GameSettings, Match }                               from './src/domain.js';
 import {
   CompetitiveLifeRuleEngine,
+  HexCompetitiveLifeRuleEngine,
   HalfBoardPlacementRegionPolicy,
   StandardPlacementValidator,
   StandardWinConditionEvaluator,
@@ -8,6 +9,7 @@ import {
 } from './src/services.js';
 import { PlacementSubmissionService, MatchFlowCoordinator } from './src/application.js';
 import { GameRenderer }                                     from './src/renderer.js';
+import { HexGameRenderer }                                  from './src/hex-renderer.js';
 import { LocalMatchController }                             from './src/controller.js';
 
 // ── Screens ───────────────────────────────────────────────────────────────────
@@ -74,6 +76,7 @@ function setupToggleGroup(selector) {
   });
 }
 
+setupToggleGroup('.opt-mode');
 setupToggleGroup('.opt-grid');
 setupToggleGroup('.opt-speed');
 setupToggleGroup('.opt-gens');
@@ -83,23 +86,25 @@ setupToggleGroup('.opt-timer');
 
 let activeController = null;
 
-function startGame(settings) {
+function startGame(settings, mode = 'square') {
   if (activeController) activeController.detach();
 
-  const match       = new Match(settings);
-  const engine      = new CompetitiveLifeRuleEngine();
-  const region      = new HalfBoardPlacementRegionPolicy();
-  const validator   = new StandardPlacementValidator();
-  const winEval     = new StandardWinConditionEvaluator();
+  const match        = new Match(settings);
+  const engine       = mode === 'hex' ? new HexCompetitiveLifeRuleEngine()
+                                      : new CompetitiveLifeRuleEngine();
+  const region       = new HalfBoardPlacementRegionPolicy();
+  const validator    = new StandardPlacementValidator();
+  const winEval      = new StandardWinConditionEvaluator();
   const statsService = new BoardStatisticsService();
-  const subs        = new PlacementSubmissionService();
+  const subs         = new PlacementSubmissionService();
 
   const coord = new MatchFlowCoordinator(
     match, subs, validator, engine, winEval, statsService, region
   );
 
   const canvas   = document.getElementById('game-canvas');
-  const renderer = new GameRenderer(canvas, settings);
+  const renderer = mode === 'hex' ? new HexGameRenderer(canvas, settings)
+                                  : new GameRenderer(canvas, settings);
   const ctrl     = new LocalMatchController(coord, renderer, settings);
 
   ctrl.attach(canvas, {
@@ -140,6 +145,7 @@ function startGame(settings) {
 // ── Start button ──────────────────────────────────────────────────────────────
 
 document.getElementById('start-btn').addEventListener('click', () => {
+  const mode = document.querySelector('.opt-mode.active')?.dataset.val ?? 'square';
   showGame();
-  startGame(readSettings());
+  startGame(readSettings(), mode);
 });

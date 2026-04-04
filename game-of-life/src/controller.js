@@ -342,13 +342,7 @@ export class LocalMatchController {
     const scaleY = this._canvas.height / rect.height;
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top)  * scaleY;
-    const s = this._renderer.cellSize;
-    if (!s) return null;
-    const col = Math.floor(x / s);
-    const row = Math.floor(y / s);
-    const { boardWidth, boardHeight } = this._settings;
-    if (row < 0 || row >= boardHeight || col < 0 || col >= boardWidth) return null;
-    return new Position(row, col);
+    return this._renderer.hitTest(x, y);
   }
 
   // ── Sparkline ─────────────────────────────────────────────────────────────

@@ -138,6 +138,53 @@ export class StandardPlacementValidator {
   }
 }
 
+// ── HexCompetitiveLifeRuleEngine ──────────────────────────────────────────────
+
+const HEX_DIRS_EVEN = [[-1,-1],[-1,0],[0,-1],[0,1],[1,-1],[1,0]];
+const HEX_DIRS_ODD  = [[-1, 0],[-1,1],[0,-1],[0,1],[1, 0],[1,1]];
+
+/**
+ * Hex-grid competitive life rules (odd-r offset, pointy-top).
+ *
+ * Survival: same-colour neighbours ∈ [2,3] AND total living neighbours ≤ 4.
+ * Birth:    empty cell with exactly 3 living neighbours → majority colour.
+ */
+export class HexCompetitiveLifeRuleEngine {
+  computeNextGeneration(board) {
+    const w = board.width, h = board.height;
+    const cells = Array.from({ length: h }, () => new Array(w).fill(CellState.EMPTY));
+    const ages  = Array.from({ length: h }, () => new Array(w).fill(0));
+
+    for (let row = 0; row < h; row++) {
+      const dirs = (row & 1) ? HEX_DIRS_ODD : HEX_DIRS_EVEN;
+      for (let col = 0; col < w; col++) {
+        const current = board.getCellAt(row, col);
+        let red = 0, blue = 0;
+        for (const [dr, dc] of dirs) {
+          const nr = row + dr, nc = col + dc;
+          if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
+          const s = board.getCellAt(nr, nc);
+          if      (s === CellState.RED)  red++;
+          else if (s === CellState.BLUE) blue++;
+        }
+        const total = red + blue;
+
+        if (current !== CellState.EMPTY) {
+          const same = current === CellState.RED ? red : blue;
+          if (same >= 2 && same <= 3 && total <= 4) {
+            cells[row][col] = current;
+            ages[row][col]  = board.getAgeAt(row, col) + 1;
+          }
+        } else if (total === 3) {
+          cells[row][col] = red >= blue ? CellState.RED : CellState.BLUE;
+          ages[row][col]  = 1;
+        }
+      }
+    }
+    return new Board(w, h, cells, ages);
+  }
+}
+
 // ── IWinConditionEvaluator ────────────────────────────────────────────────────
 
 export class StandardWinConditionEvaluator {

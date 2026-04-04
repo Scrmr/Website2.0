@@ -367,6 +367,18 @@
   <h1 class="settings-title">Two-Player Life</h1>
   <p class="settings-lead">Configure the match before you start. These settings are the host's call.</p>
 
+  <!-- Game mode -->
+  <div class="setting-group">
+    <span class="setting-label">Mode</span>
+    <div class="toggle-row">
+      <button class="btn-opt opt-mode active" data-val="square">Square</button>
+      <button class="btn-opt opt-mode"        data-val="hex">Hex</button>
+    </div>
+    <p class="setting-desc">Hex uses a 6-neighbour offset grid. Cells survive with 2–3 same-colour and ≤ 4 total. Birth at exactly 3 total neighbours.</p>
+  </div>
+
+  <hr class="divider">
+
   <!-- Board size -->
   <div class="setting-group">
     <span class="setting-label">Board size</span>
@@ -507,8 +519,9 @@
       <p><strong>Simulation:</strong> The board evolves automatically for 10 generations. No input allowed during this phase.</p>
       <p><strong>Reinforcement:</strong> After each block, place 5–max cells. Unused cells are banked with a 1-cell storage tax.</p>
       <p><strong>Banking:</strong> If you save 5 cells this round, you bank 4 (1 tax). Those 4 are added to your budget next round.</p>
-      <p><strong>Survival:</strong> A cell lives when it has 2–3 same-colour neighbours and at most 3 total neighbours. Otherwise it dies.</p>
-      <p><strong>Birth:</strong> An empty cell with exactly 3 living neighbours is colonised by the majority colour.</p>
+      <p><strong>Survival (square):</strong> A cell lives when it has 2–3 same-colour neighbours and at most 3 total neighbours.</p>
+      <p><strong>Survival (hex):</strong> A cell lives when it has 2–3 same-colour neighbours and at most 4 total neighbours.</p>
+      <p><strong>Birth:</strong> An empty cell with exactly 3 living neighbours is colonised by the majority colour (both modes).</p>
       <p><strong>Win:</strong> Eliminate all opponent cells, or have more cells when the generation cap is reached.</p>
     </div>
   </details>

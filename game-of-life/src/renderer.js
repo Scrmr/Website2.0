@@ -1,4 +1,4 @@
-import { CellState, PlayerColor, MatchPhase } from './domain.js';
+import { CellState, PlayerColor, MatchPhase, Position } from './domain.js';
 
 // Maximum age at which tinting is fully applied (cells older than this
 // look the same as cells at this age).
@@ -74,6 +74,17 @@ export class GameRenderer {
   }
 
   clearStampPreview() { this._stamp = null; }
+
+  /** Convert canvas pixel coordinates to board cell. Returns Position or null. */
+  hitTest(canvasX, canvasY) {
+    const s = this._s;
+    if (!s) return null;
+    const { boardWidth, boardHeight } = this._settings;
+    const col = Math.floor(canvasX / s);
+    const row = Math.floor(canvasY / s);
+    if (row < 0 || row >= boardHeight || col < 0 || col >= boardWidth) return null;
+    return new Position(row, col);
+  }
 
   resize(containerWidth) {
     const { boardWidth, boardHeight } = this._settings;
