@@ -364,6 +364,11 @@ function startOnlineGame(sock, color, settingsData, mode) {
                                   : new GameRenderer(canvas, settings);
   const ctrl     = new OnlineMatchController(sock, color, renderer, settings);
 
+  // Show the game screen before attach() so clientWidth is correct when
+  // the renderer sizes the canvas inside _onResize().
+  activeController = ctrl;
+  showGame();
+
   ctrl.attach(canvas, buildGameUI());
   ctrl.onNewGame(() => {
     if (activeController) activeController.detach();
@@ -378,9 +383,6 @@ function startOnlineGame(sock, color, settingsData, mode) {
     document.getElementById('join-confirm-btn').disabled   = false;
     showSettings();
   });
-
-  activeController = ctrl;
-  showGame();
 }
 
 // Create room
