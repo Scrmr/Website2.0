@@ -346,11 +346,11 @@ let socket = null;
 
 function getSocket() {
   if (!socket) {
-    const origin = (window.location.hostname === 'localhost' ||
-                    window.location.hostname === '127.0.0.1')
+    const serverUrl = (window.location.hostname === 'localhost' ||
+                       window.location.hostname === '127.0.0.1')
       ? 'http://localhost:8080'
-      : window.location.origin;
-    socket = io(origin);  // io is the global from the socket.io CDN script
+      : 'https://poemgenerator-492211.appspot.com';
+    socket = io(serverUrl);
   }
   return socket;
 }
