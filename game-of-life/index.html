@@ -29,91 +29,307 @@
        SETTINGS SCREEN
     ═══════════════════════════════════════════════════════════════ */
     #settings-screen {
-      max-width: 580px;
+      max-width: 1120px;
       margin: 0 auto;
-      padding: 32px 20px 60px;
+      padding: 36px 20px 64px;
     }
 
-    .settings-title { font-size: 1.5rem; margin: 0 0 4px; }
-    .settings-lead  { color: #666; font-size: 0.88rem; margin: 0 0 28px; }
+    .settings-hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .settings-eyebrow {
+      margin: 0 0 10px;
+      color: #8f8f8f;
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .settings-title {
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1;
+      margin: 0 0 10px;
+    }
+    .settings-lead {
+      color: #9f9f9f;
+      font-size: 0.98rem;
+      line-height: 1.6;
+      margin: 0;
+      max-width: 680px;
+    }
 
-    .setting-group {
-      margin-bottom: 22px;
+    .settings-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.9fr);
+      gap: 20px;
+      align-items: start;
+    }
+    .settings-main {
+      display: grid;
+      gap: 16px;
+    }
+    .settings-card {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)),
+        #101010;
+      border: 1px solid #202020;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .settings-aside {
+      position: sticky;
+      top: 18px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #f4f4f4;
+    }
+    .section-copy {
+      margin: 2px 0 0;
+      max-width: 320px;
+      color: #6f6f6f;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .setting-group + .setting-group {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid #1d1d1d;
     }
     .setting-label {
       display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #888;
-      letter-spacing: 0.05em;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #8c8c8c;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      margin-bottom: 8px;
+      margin-bottom: 7px;
+    }
+    .setting-subtitle {
+      margin: 0 0 10px;
+      color: #f0f0f0;
+      font-size: 0.92rem;
+      font-weight: 600;
     }
     .setting-desc {
-      font-size: 0.75rem;
-      color: #444;
-      margin-top: 6px;
+      font-size: 0.82rem;
+      color: #7d7d7d;
+      margin: 10px 0 0;
+      line-height: 1.6;
     }
 
-    /* Toggle-button rows */
-    .toggle-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .toggle-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+      gap: 10px;
+    }
+    .toggle-row.compact {
+      grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    }
+    .toggle-row.mode-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 
     .btn-opt {
-      padding: 6px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      min-height: 72px;
+      padding: 14px 15px;
       background: #111;
       border: 1px solid #2a2a2a;
-      border-radius: 6px;
-      color: #777;
+      border-radius: 14px;
+      color: #9b9b9b;
       font-family: inherit;
-      font-size: 0.83rem;
+      font-size: 0.84rem;
+      text-align: left;
       cursor: pointer;
-      transition: border-color 0.12s, color 0.12s, background 0.12s;
+      transition: border-color 0.12s, color 0.12s, background 0.12s, transform 0.12s;
     }
-    .btn-opt:hover { border-color: #444; color: #ccc; }
+    .btn-opt:hover {
+      border-color: #424242;
+      color: #d9d9d9;
+      background: #161616;
+      transform: translateY(-1px);
+    }
     .btn-opt.active {
-      border-color: #555;
-      background: #1a1a1a;
-      color: #e0e0e0;
+      border-color: #6a6a6a;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)), #191919;
+      color: #f2f2f2;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
+    }
+    .btn-opt-title {
+      display: block;
+      font-size: 0.94rem;
       font-weight: 600;
+      color: inherit;
     }
+    .btn-opt-meta {
+      display: block;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      color: #747474;
+    }
+    .btn-opt.active .btn-opt-meta { color: #b8b8b8; }
 
-    /* Number inputs */
-    .num-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-    .num-field { display: flex; align-items: center; gap: 7px; }
-    .num-field label { font-size: 0.82rem; color: #888; }
-    .num-field input {
-      width: 64px;
-      padding: 5px 8px;
-      background: #111;
+    .setting-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .setting-chip {
+      padding: 6px 10px;
+      border-radius: 999px;
       border: 1px solid #2a2a2a;
-      border-radius: 6px;
-      color: #e0e0e0;
-      font-family: inherit;
-      font-size: 0.85rem;
-      text-align: center;
+      background: #0d0d0d;
+      color: #bcbcbc;
+      font-size: 0.75rem;
+      line-height: 1;
     }
-    .num-field input:focus { outline: none; border-color: #444; }
 
-    .divider { border: none; border-top: 1px solid #1a1a1a; margin: 24px 0; }
+    .num-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .num-field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .num-field label {
+      font-size: 0.8rem;
+      color: #9a9a9a;
+    }
+    .num-field input {
+      width: 100%;
+      padding: 11px 12px;
+      background: #0f0f0f;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      color: #ececec;
+      font-family: inherit;
+      font-size: 0.94rem;
+      text-align: left;
+    }
+    .num-field input:focus {
+      outline: none;
+      border-color: #5a5a5a;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.03);
+    }
 
-    /* Start button */
+    .summary-card {
+      padding: 22px;
+      background:
+        radial-gradient(circle at top right, rgba(64,144,232,0.16), transparent 36%),
+        radial-gradient(circle at top left, rgba(232,64,64,0.12), transparent 32%),
+        #101010;
+    }
+    .summary-title {
+      margin: 0;
+      font-size: 1.28rem;
+      color: #f5f5f5;
+    }
+    .summary-copy {
+      margin: 10px 0 0;
+      color: #989898;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+    .summary-list {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: baseline;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1f1f1f;
+      font-size: 0.86rem;
+    }
+    .summary-row span { color: #818181; }
+    .summary-row strong {
+      color: #f0f0f0;
+      font-size: 0.92rem;
+      text-align: right;
+    }
+    .summary-tip {
+      margin-top: 16px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid #232323;
+      color: #bbbbbb;
+      font-size: 0.81rem;
+      line-height: 1.6;
+    }
+
     .btn-start {
       display: block;
       width: 100%;
-      padding: 13px;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 8px;
-      color: #e0e0e0;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #1c4f86, #2a74c0);
+      border: 1px solid #4b7fbb;
+      border-radius: 14px;
+      color: #f7fbff;
       font-family: inherit;
       font-size: 1rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
-      letter-spacing: 0.03em;
-      transition: background 0.12s, border-color 0.12s;
-      margin-top: 28px;
+      letter-spacing: 0.02em;
+      transition: transform 0.12s, filter 0.12s;
+      margin-top: 18px;
     }
-    .btn-start:hover { background: #222; border-color: #444; }
+    .btn-start:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 860px) {
+      .settings-layout {
+        grid-template-columns: 1fr;
+      }
+      .settings-aside {
+        position: static;
+      }
+      .section-head {
+        flex-direction: column;
+      }
+    }
+    @media (max-width: 640px) {
+      #settings-screen {
+        padding: 28px 16px 50px;
+      }
+      .settings-hero {
+        margin-bottom: 18px;
+      }
+      .toggle-row.mode-row,
+      .num-row {
+        grid-template-columns: 1fr;
+      }
+      .btn-opt {
+        min-height: 64px;
+      }
+    }
 
     /* ═══════════════════════════════════════════════════════════════
        GAME SCREEN
@@ -363,89 +579,184 @@
      SETTINGS SCREEN
 ══════════════════════════════════════════════════════════════════════════ -->
 <div id="settings-screen">
-
-  <h1 class="settings-title">Two-Player Life</h1>
-  <p class="settings-lead">Configure the match before you start. These settings are the host's call.</p>
-
-  <!-- Game mode -->
-  <div class="setting-group">
-    <span class="setting-label">Mode</span>
-    <div class="toggle-row">
-      <button class="btn-opt opt-mode active" data-val="square">Square</button>
-      <button class="btn-opt opt-mode"        data-val="hex">Hex</button>
+  <section class="settings-hero">
+    <div>
+      <p class="settings-eyebrow">Local versus match setup</p>
+      <h1 class="settings-title">Two-Player Life</h1>
+      <p class="settings-lead">Choose the board, pace, and placement budget before the duel begins. The panel on the right keeps a live summary so you can see what kind of match you are creating.</p>
     </div>
-    <p class="setting-desc">Hex uses a 6-neighbour offset grid. Cells survive with 2–3 same-colour and ≤ 4 total. Birth at exactly 3 total neighbours.</p>
-  </div>
+  </section>
 
-  <hr class="divider">
+  <div class="settings-layout">
+    <div class="settings-main">
 
-  <!-- Board size -->
-  <div class="setting-group">
-    <span class="setting-label">Board size</span>
-    <div class="toggle-row">
-      <button class="btn-opt opt-grid" data-val="small">Small (30×18)</button>
-      <button class="btn-opt opt-grid active" data-val="medium">Medium (40×24)</button>
-      <button class="btn-opt opt-grid" data-val="large">Large (56×32)</button>
+      <section class="settings-card">
+        <div class="section-head">
+          <div>
+            <span class="setting-label">Mode</span>
+            <h2 class="section-title">Choose the board language</h2>
+          </div>
+          <p class="section-copy">Square plays closer to classic Life. Hex reduces hard corners and creates looser fronts.</p>
+        </div>
+
+        <div class="toggle-row mode-row">
+          <button type="button" class="btn-opt opt-mode active" data-val="square" title="Square grid: 8 neighbours, survival at 2-3 same-colour and <= 3 total.">
+            <span class="btn-opt-title">Square grid</span>
+            <span class="btn-opt-meta">8 neighbours, stricter crowding, more familiar patterns</span>
+          </button>
+          <button type="button" class="btn-opt opt-mode" data-val="hex" title="Hex grid: 6 neighbours, survival at 2-3 same-colour and <= 4 total.">
+            <span class="btn-opt-title">Hex grid</span>
+            <span class="btn-opt-meta">6 neighbours, smoother fronts, more lateral pressure</span>
+          </button>
+        </div>
+
+        <p id="mode-help" class="setting-desc"></p>
+        <div id="mode-facts" class="setting-chip-row"></div>
+      </section>
+
+      <section class="settings-card">
+        <div class="section-head">
+          <div>
+            <span class="setting-label">Board and pacing</span>
+            <h2 class="section-title">Set the shape of the match</h2>
+          </div>
+          <p class="section-copy">Board size changes how quickly fronts collide. Speed and generation cap decide whether the game feels surgical or chaotic.</p>
+        </div>
+
+        <div class="setting-group">
+          <p class="setting-subtitle">Board size</p>
+          <div class="toggle-row">
+            <button type="button" class="btn-opt opt-grid" data-val="small">
+              <span class="btn-opt-title">Small</span>
+              <span class="btn-opt-meta">30 x 18 board for fast clashes</span>
+            </button>
+            <button type="button" class="btn-opt opt-grid active" data-val="medium">
+              <span class="btn-opt-title">Medium</span>
+              <span class="btn-opt-meta">40 x 24 board for balanced openings</span>
+            </button>
+            <button type="button" class="btn-opt opt-grid" data-val="large">
+              <span class="btn-opt-title">Large</span>
+              <span class="btn-opt-meta">56 x 32 board with more room to build</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <p class="setting-subtitle">Simulation speed</p>
+          <div class="toggle-row compact">
+            <button type="button" class="btn-opt opt-speed" data-val="slow">
+              <span class="btn-opt-title">Slow</span>
+              <span class="btn-opt-meta">280 ms per step</span>
+            </button>
+            <button type="button" class="btn-opt opt-speed active" data-val="normal">
+              <span class="btn-opt-title">Normal</span>
+              <span class="btn-opt-meta">140 ms per step</span>
+            </button>
+            <button type="button" class="btn-opt opt-speed" data-val="fast">
+              <span class="btn-opt-title">Fast</span>
+              <span class="btn-opt-meta">60 ms per step</span>
+            </button>
+            <button type="button" class="btn-opt opt-speed" data-val="blitz">
+              <span class="btn-opt-title">Blitz</span>
+              <span class="btn-opt-meta">25 ms per step</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <p class="setting-subtitle">Match length</p>
+          <div class="toggle-row compact">
+            <button type="button" class="btn-opt opt-gens" data-val="100">
+              <span class="btn-opt-title">100 gen</span>
+              <span class="btn-opt-meta">Quick finish</span>
+            </button>
+            <button type="button" class="btn-opt opt-gens active" data-val="250">
+              <span class="btn-opt-title">250 gen</span>
+              <span class="btn-opt-meta">Default balance</span>
+            </button>
+            <button type="button" class="btn-opt opt-gens" data-val="500">
+              <span class="btn-opt-title">500 gen</span>
+              <span class="btn-opt-meta">Long macro game</span>
+            </button>
+          </div>
+        </div>
+
+        <p id="pacing-help" class="setting-desc"></p>
+      </section>
+
+      <section class="settings-card">
+        <div class="section-head">
+          <div>
+            <span class="setting-label">Placement economy</span>
+            <h2 class="section-title">Control early pressure and comeback space</h2>
+          </div>
+          <p class="section-copy">Setup is exact. Reinforcement rounds use a minimum and maximum budget, with saved cells banking at a one-cell tax.</p>
+        </div>
+
+        <div class="num-row">
+          <div class="num-field">
+            <label for="s-setup">Setup cells</label>
+            <input id="s-setup" type="number" min="1" max="30" value="10">
+          </div>
+          <div class="num-field">
+            <label for="s-rmin">Reinforcement min</label>
+            <input id="s-rmin" type="number" min="1" max="20" value="5">
+          </div>
+          <div class="num-field">
+            <label for="s-rmax">Reinforcement max</label>
+            <input id="s-rmax" type="number" min="1" max="40" value="10">
+          </div>
+        </div>
+
+        <p id="placement-help" class="setting-desc"></p>
+
+        <div class="setting-group">
+          <p class="setting-subtitle">Placement timer</p>
+          <div class="toggle-row compact">
+            <button type="button" class="btn-opt opt-timer active" data-val="0">
+              <span class="btn-opt-title">Off</span>
+              <span class="btn-opt-meta">No countdown</span>
+            </button>
+            <button type="button" class="btn-opt opt-timer" data-val="20">
+              <span class="btn-opt-title">20 s</span>
+              <span class="btn-opt-meta">Fast decisions</span>
+            </button>
+            <button type="button" class="btn-opt opt-timer" data-val="30">
+              <span class="btn-opt-title">30 s</span>
+              <span class="btn-opt-meta">Balanced pressure</span>
+            </button>
+            <button type="button" class="btn-opt opt-timer" data-val="45">
+              <span class="btn-opt-title">45 s</span>
+              <span class="btn-opt-meta">More planning time</span>
+            </button>
+          </div>
+        </div>
+
+        <p id="timer-help" class="setting-desc"></p>
+      </section>
+
     </div>
+
+    <aside class="settings-aside">
+      <section class="settings-card summary-card">
+        <span class="setting-label">Match snapshot</span>
+        <h2 class="summary-title">Ready to launch</h2>
+        <p id="summary-blurb" class="summary-copy"></p>
+
+        <div class="summary-list">
+          <div class="summary-row"><span>Mode</span><strong id="summary-mode"></strong></div>
+          <div class="summary-row"><span>Board</span><strong id="summary-board"></strong></div>
+          <div class="summary-row"><span>Setup</span><strong id="summary-setup"></strong></div>
+          <div class="summary-row"><span>Reinforcement</span><strong id="summary-reinforcement"></strong></div>
+          <div class="summary-row"><span>Pacing</span><strong id="summary-pacing"></strong></div>
+          <div class="summary-row"><span>Timer</span><strong id="summary-timer"></strong></div>
+        </div>
+
+        <div id="summary-tip" class="summary-tip"></div>
+        <button id="start-btn" class="btn-start">Start Game</button>
+      </section>
+    </aside>
   </div>
-
-  <!-- Cell counts -->
-  <div class="setting-group">
-    <span class="setting-label">Cells per round</span>
-    <div class="num-row">
-      <div class="num-field">
-        <label for="s-setup">Setup (exact)</label>
-        <input id="s-setup" type="number" min="1" max="30" value="10">
-      </div>
-      <div class="num-field">
-        <label for="s-rmin">Reinf. min</label>
-        <input id="s-rmin" type="number" min="1" max="20" value="5">
-      </div>
-      <div class="num-field">
-        <label for="s-rmax">Reinf. max</label>
-        <input id="s-rmax" type="number" min="1" max="40" value="10">
-      </div>
-    </div>
-    <p class="setting-desc">Unused cells carry over with a 1-cell storage tax (save 5 → bank 4).</p>
-  </div>
-
-  <hr class="divider">
-
-  <!-- Simulation speed -->
-  <div class="setting-group">
-    <span class="setting-label">Simulation speed</span>
-    <div class="toggle-row">
-      <button class="btn-opt opt-speed" data-val="slow">Slow</button>
-      <button class="btn-opt opt-speed active" data-val="normal">Normal</button>
-      <button class="btn-opt opt-speed" data-val="fast">Fast</button>
-      <button class="btn-opt opt-speed" data-val="blitz">Blitz</button>
-    </div>
-  </div>
-
-  <!-- Max generations -->
-  <div class="setting-group">
-    <span class="setting-label">Match length</span>
-    <div class="toggle-row">
-      <button class="btn-opt opt-gens" data-val="100">100 gen</button>
-      <button class="btn-opt opt-gens active" data-val="250">250 gen</button>
-      <button class="btn-opt opt-gens" data-val="500">500 gen</button>
-    </div>
-    <p class="setting-desc">If neither player is eliminated, the player with more cells at the cap wins.</p>
-  </div>
-
-  <!-- Placement timer -->
-  <div class="setting-group">
-    <span class="setting-label">Placement timer</span>
-    <div class="toggle-row">
-      <button class="btn-opt opt-timer active" data-val="0">Off</button>
-      <button class="btn-opt opt-timer" data-val="20">20 s</button>
-      <button class="btn-opt opt-timer" data-val="30">30 s</button>
-      <button class="btn-opt opt-timer" data-val="45">45 s</button>
-    </div>
-    <p class="setting-desc">When time runs out, both players are force-readied with whatever cells they staged.</p>
-  </div>
-
-  <button id="start-btn" class="btn-start">Start Game</button>
 
 </div>
 

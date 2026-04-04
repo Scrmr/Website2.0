@@ -12,10 +12,29 @@ import { GameRenderer }                                     from './src/renderer
 import { HexGameRenderer }                                  from './src/hex-renderer.js';
 import { LocalMatchController }                             from './src/controller.js';
 
-// ── Screens ───────────────────────────────────────────────────────────────────
+// Screens
 
 const settingsScreen = document.getElementById('settings-screen');
 const gameScreen     = document.getElementById('game-screen');
+const settingsUI     = {
+  modeHelp:         document.getElementById('mode-help'),
+  modeFacts:        document.getElementById('mode-facts'),
+  pacingHelp:       document.getElementById('pacing-help'),
+  placementHelp:    document.getElementById('placement-help'),
+  timerHelp:        document.getElementById('timer-help'),
+  summaryBlurb:     document.getElementById('summary-blurb'),
+  summaryMode:      document.getElementById('summary-mode'),
+  summaryBoard:     document.getElementById('summary-board'),
+  summarySetup:     document.getElementById('summary-setup'),
+  summaryReinforce: document.getElementById('summary-reinforcement'),
+  summaryPacing:    document.getElementById('summary-pacing'),
+  summaryTimer:     document.getElementById('summary-timer'),
+  summaryTip:       document.getElementById('summary-tip'),
+  startBtn:         document.getElementById('start-btn'),
+  setupInput:       document.getElementById('s-setup'),
+  reinMinInput:     document.getElementById('s-rmin'),
+  reinMaxInput:     document.getElementById('s-rmax'),
+};
 
 function showSettings() {
   gameScreen.style.display     = 'none';
@@ -27,51 +46,155 @@ function showGame() {
   gameScreen.style.display     = 'block';
 }
 
-// ── Settings reading ──────────────────────────────────────────────────────────
+// Settings reading
+
+const MODE_PRESETS = {
+  square: {
+    label: 'Square grid',
+    actionLabel: 'square match',
+    help: 'Square uses the classic 8-neighbour board. A living cell survives with 2-3 same-colour neighbours and no more than 3 total living neighbours. Birth still happens at exactly 3 living neighbours.',
+    facts: ['8-neighbour board', 'Tighter crowding rule', 'Best for familiar Life patterns'],
+    blurb: 'A tighter, more tactical ruleset that rewards precise spacing and disciplined staging.',
+    tip: 'Square tends to punish overgrowth quickly, so stable anchors and controlled reinforcements matter more.',
+  },
+  hex: {
+    label: 'Hex grid',
+    actionLabel: 'hex match',
+    help: 'Hex uses a 6-neighbour offset grid. A living cell survives with 2-3 same-colour neighbours and no more than 4 total living neighbours. Birth happens at exactly 3 living neighbours.',
+    facts: ['6-neighbour offset grid', 'Smoother front lines', 'Better for lateral pressure and flanks'],
+    blurb: 'A wider-flowing board that produces softer edges and more sideways pressure between fronts.',
+    tip: 'Hex gives clusters a little more breathing room, so spreading influence across lanes is often stronger than stacking tightly.',
+  },
+};
 
 const GRID_PRESETS = {
-  small:  { boardWidth: 30, boardHeight: 18 },
-  medium: { boardWidth: 40, boardHeight: 24 },
-  large:  { boardWidth: 56, boardHeight: 32 },
+  small:  { boardWidth: 30, boardHeight: 18, summary: '30 x 18', boardNote: 'Fast contact and earlier contested pressure.' },
+  medium: { boardWidth: 40, boardHeight: 24, summary: '40 x 24', boardNote: 'Balanced spacing for most matches.' },
+  large:  { boardWidth: 56, boardHeight: 32, summary: '56 x 32', boardNote: 'More expansion room before fronts collide.' },
 };
 
 const SPEED_PRESETS = {
-  slow:   280,
-  normal: 140,
-  fast:   60,
-  blitz:  25,
+  slow:   { stepMs: 280, label: 'Slow',  help: 'You get more time to read each simulation block.' },
+  normal: { stepMs: 140, label: 'Normal', help: 'A balanced default that still lets patterns breathe.' },
+  fast:   { stepMs: 60,  label: 'Fast',  help: 'Rounds resolve quickly and reward intuition.' },
+  blitz:  { stepMs: 25,  label: 'Blitz', help: 'Pure chaos pace for short, high-energy games.' },
+};
+
+const GENERATION_PRESETS = {
+  100: { label: '100 generations', summary: 'Short game' },
+  250: { label: '250 generations', summary: 'Standard game' },
+  500: { label: '500 generations', summary: 'Long game' },
+};
+
+const TIMER_PRESETS = {
+  0:  { summary: 'No placement timer', help: 'Players can take as long as they want in setup and reinforcement rounds.' },
+  20: { summary: '20 second timer',    help: 'Very little deliberation. Great for snappy, high-pressure rounds.' },
+  30: { summary: '30 second timer',    help: 'Adds pressure without making placement feel rushed.' },
+  45: { summary: '45 second timer',    help: 'Leaves room for careful pattern placement while still enforcing pace.' },
 };
 
 function readSettings() {
-  const grid  = GRID_PRESETS[document.querySelector('.opt-grid.active')?.dataset.val  ?? 'medium'];
-  const speed = SPEED_PRESETS[document.querySelector('.opt-speed.active')?.dataset.val ?? 'normal'];
-  const gens  = parseInt(document.querySelector('.opt-gens.active')?.dataset.val ?? '250', 10);
-  const timer = parseInt(document.querySelector('.opt-timer.active')?.dataset.val ?? '0',  10);
-
-  const setupCells = clamp(parseInt(document.getElementById('s-setup').value,  10), 1, 30);
-  const reinMin    = clamp(parseInt(document.getElementById('s-rmin').value,   10), 1, 20);
-  const reinMax    = clamp(parseInt(document.getElementById('s-rmax').value,   10), reinMin, 40);
+  const grid  = GRID_PRESETS[activeOptionValue('.opt-grid', 'medium')];
+  const speed = SPEED_PRESETS[activeOptionValue('.opt-speed', 'normal')];
+  const gens  = parseInt(activeOptionValue('.opt-gens', '250'), 10);
+  const timer = parseInt(activeOptionValue('.opt-timer', '0'), 10);
+  const { setupCells, reinMin, reinMax } = readPlacementInputs(true);
 
   return new GameSettings({
-    ...grid,
-    initialPlacementCount:           setupCells,
-    reinforcementMinPlacementCount:  reinMin,
-    reinforcementMaxPlacementCount:  reinMax,
-    simulationStepMs:                speed,
-    maxGenerations:                  gens,
-    placementTimerSeconds:           timer,
+    boardWidth:                     grid.boardWidth,
+    boardHeight:                    grid.boardHeight,
+    initialPlacementCount:          setupCells,
+    reinforcementMinPlacementCount: reinMin,
+    reinforcementMaxPlacementCount: reinMax,
+    simulationStepMs:               speed.stepMs,
+    maxGenerations:                 gens,
+    placementTimerSeconds:          timer,
   });
 }
 
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
 
-// ── Toggle-button groups ──────────────────────────────────────────────────────
+function activeOptionValue(selector, fallback) {
+  return document.querySelector(`${selector}.active`)?.dataset.val ?? fallback;
+}
+
+function readPlacementInputs(commit = false) {
+  const setupRaw = parseInt(settingsUI.setupInput.value, 10);
+  const minRaw   = parseInt(settingsUI.reinMinInput.value, 10);
+  const maxRaw   = parseInt(settingsUI.reinMaxInput.value, 10);
+
+  const setupCells = clamp(Number.isNaN(setupRaw) ? 10 : setupRaw, 1, 30);
+  const reinMin    = clamp(Number.isNaN(minRaw) ? 5 : minRaw, 1, 20);
+  const reinMax    = clamp(Number.isNaN(maxRaw) ? 10 : maxRaw, reinMin, 40);
+
+  if (commit) {
+    settingsUI.setupInput.value   = String(setupCells);
+    settingsUI.reinMinInput.value = String(reinMin);
+    settingsUI.reinMaxInput.value = String(reinMax);
+  }
+
+  return { setupCells, reinMin, reinMax };
+}
+
+function syncToggleAccessibility(selector) {
+  document.querySelectorAll(selector).forEach(btn => {
+    btn.setAttribute('aria-pressed', String(btn.classList.contains('active')));
+  });
+}
+
+function renderModeFacts(facts) {
+  settingsUI.modeFacts.replaceChildren(...facts.map(fact => {
+    const chip = document.createElement('span');
+    chip.className = 'setting-chip';
+    chip.textContent = fact;
+    return chip;
+  }));
+}
+
+function syncSettingsUI() {
+  const mode = MODE_PRESETS[activeOptionValue('.opt-mode', 'square')];
+  const grid = GRID_PRESETS[activeOptionValue('.opt-grid', 'medium')];
+  const speed = SPEED_PRESETS[activeOptionValue('.opt-speed', 'normal')];
+  const generations = GENERATION_PRESETS[activeOptionValue('.opt-gens', '250')];
+  const timer = TIMER_PRESETS[activeOptionValue('.opt-timer', '0')];
+  const { setupCells, reinMin, reinMax } = readPlacementInputs();
+  const totalCells = grid.boardWidth * grid.boardHeight;
+
+  settingsUI.modeHelp.textContent = mode.help;
+  renderModeFacts(mode.facts);
+
+  settingsUI.pacingHelp.textContent =
+    `${grid.summary} gives you ${totalCells} total cells to fight over. ${grid.boardNote} ${speed.help} If neither player is eliminated by ${generations.label}, the higher live-cell count wins.`;
+
+  settingsUI.placementHelp.textContent =
+    `Setup requires exactly ${setupCells} cells per player. Reinforcement rounds allow ${reinMin}-${reinMax} cells, and any unused budget banks with a 1-cell storage tax.`;
+
+  settingsUI.timerHelp.textContent =
+    `${timer.help} When the timer expires, both players are force-readied with whatever they have staged.`;
+
+  settingsUI.summaryBlurb.textContent = `${mode.blurb} ${grid.boardNote}`;
+  settingsUI.summaryMode.textContent = mode.label;
+  settingsUI.summaryBoard.textContent = `${grid.summary} (${totalCells} cells)`;
+  settingsUI.summarySetup.textContent = `${setupCells} cells each`;
+  settingsUI.summaryReinforce.textContent = `${reinMin}-${reinMax} cells`;
+  settingsUI.summaryPacing.textContent = `${speed.label}, ${generations.summary}`;
+  settingsUI.summaryTimer.textContent = timer.summary;
+  settingsUI.summaryTip.textContent = mode.tip;
+  settingsUI.startBtn.textContent = `Start ${mode.actionLabel}`;
+}
+
+// Toggle-button groups
 
 function setupToggleGroup(selector) {
+  syncToggleAccessibility(selector);
   document.querySelectorAll(selector).forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll(selector).forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      syncToggleAccessibility(selector);
+      syncSettingsUI();
     });
   });
 }
@@ -82,7 +205,17 @@ setupToggleGroup('.opt-speed');
 setupToggleGroup('.opt-gens');
 setupToggleGroup('.opt-timer');
 
-// ── Game lifecycle ────────────────────────────────────────────────────────────
+[settingsUI.setupInput, settingsUI.reinMinInput, settingsUI.reinMaxInput].forEach(input => {
+  input.addEventListener('input', syncSettingsUI);
+  input.addEventListener('blur', () => {
+    readPlacementInputs(true);
+    syncSettingsUI();
+  });
+});
+
+syncSettingsUI();
+
+// Game lifecycle
 
 let activeController = null;
 
@@ -108,30 +241,30 @@ function startGame(settings, mode = 'square') {
   const ctrl     = new LocalMatchController(coord, renderer, settings);
 
   ctrl.attach(canvas, {
-    genCounter:  document.getElementById('gen-counter'),
-    phaseLabel:  document.getElementById('phase-label'),
-    timer:       document.getElementById('timer'),
-    domRed:      document.getElementById('dom-red'),
-    domBlue:     document.getElementById('dom-blue'),
-    domRedPct:   document.getElementById('dom-red-pct'),
-    domBluePct:  document.getElementById('dom-blue-pct'),
-    redCells:    document.getElementById('red-cells'),
-    redPlaced:   document.getElementById('red-placed'),
-    redBank:     document.getElementById('red-bank'),
-    redCatchup:  document.getElementById('red-catchup'),
-    redReady:    document.getElementById('red-ready'),
-    redError:    document.getElementById('red-error'),
-    redPatterns: document.getElementById('red-patterns'),
-    redSpark:    document.getElementById('red-spark'),
-    blueCells:   document.getElementById('blue-cells'),
-    bluePlaced:  document.getElementById('blue-placed'),
-    blueBank:    document.getElementById('blue-bank'),
-    blueCatchup: document.getElementById('blue-catchup'),
-    blueReady:   document.getElementById('blue-ready'),
-    blueError:   document.getElementById('blue-error'),
-    bluePatterns:document.getElementById('blue-patterns'),
-    blueSpark:   document.getElementById('blue-spark'),
-    newGame:     document.getElementById('new-game'),
+    genCounter:   document.getElementById('gen-counter'),
+    phaseLabel:   document.getElementById('phase-label'),
+    timer:        document.getElementById('timer'),
+    domRed:       document.getElementById('dom-red'),
+    domBlue:      document.getElementById('dom-blue'),
+    domRedPct:    document.getElementById('dom-red-pct'),
+    domBluePct:   document.getElementById('dom-blue-pct'),
+    redCells:     document.getElementById('red-cells'),
+    redPlaced:    document.getElementById('red-placed'),
+    redBank:      document.getElementById('red-bank'),
+    redCatchup:   document.getElementById('red-catchup'),
+    redReady:     document.getElementById('red-ready'),
+    redError:     document.getElementById('red-error'),
+    redPatterns:  document.getElementById('red-patterns'),
+    redSpark:     document.getElementById('red-spark'),
+    blueCells:    document.getElementById('blue-cells'),
+    bluePlaced:   document.getElementById('blue-placed'),
+    blueBank:     document.getElementById('blue-bank'),
+    blueCatchup:  document.getElementById('blue-catchup'),
+    blueReady:    document.getElementById('blue-ready'),
+    blueError:    document.getElementById('blue-error'),
+    bluePatterns: document.getElementById('blue-patterns'),
+    blueSpark:    document.getElementById('blue-spark'),
+    newGame:      document.getElementById('new-game'),
   });
 
   ctrl.onNewGame(() => {
@@ -142,10 +275,10 @@ function startGame(settings, mode = 'square') {
   activeController = ctrl;
 }
 
-// ── Start button ──────────────────────────────────────────────────────────────
+// Start button
 
-document.getElementById('start-btn').addEventListener('click', () => {
-  const mode = document.querySelector('.opt-mode.active')?.dataset.val ?? 'square';
+settingsUI.startBtn.addEventListener('click', () => {
+  const mode = activeOptionValue('.opt-mode', 'square');
   showGame();
   startGame(readSettings(), mode);
 });
