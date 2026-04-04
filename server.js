@@ -23,7 +23,11 @@ const io = new Server(httpServer, {
 app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai = null;
+function getOpenAI() {
+  if (!openai) openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return openai;
+}
 
 // ── Poem tokeniser (mirrors frontend so indices line up) ──────────────────────
 
@@ -54,7 +58,7 @@ app.post('/generate-poem', async (req, res) => {
   }
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -87,7 +91,7 @@ app.post('/api/generatePhrases', async (req, res) => {
     : 'Generate options for the opening line of a poem.';
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
