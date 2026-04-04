@@ -1,118 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game of Life — IgnasZ</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            background: #1a1a1a;
-            color: #e0e0e0;
-        }
-        .topbar {
-            background: #0a0a0a;
-            border-bottom: 1px solid #1e1e1e;
-            padding: 12px 20px;
-        }
-        .topbar a {
-            color: #888;
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: color 0.2s;
-        }
-        .topbar a:hover { color: #e0e0e0; }
-        .page-header {
-            text-align: center;
-            padding: 32px 20px 16px;
-        }
-        .page-header h1 { margin: 0 0 8px; font-size: 1.6rem; }
-        .page-header p { margin: 0; color: #888; font-size: 0.9rem; }
-        .canvas-wrapper {
-            overflow-x: auto;
-            display: flex;
-            justify-content: center;
-            padding: 0 16px;
-        }
-        #gameCanvas {
-            background-color: #fff;
-            border: 1px solid #333;
-            cursor: crosshair;
-            display: block;
-        }
-        #controls {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            padding: 16px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        button, select, input[type=range], input[type=color] {
-            background: #222;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 6px 12px;
-            font-family: inherit;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-        button:hover { border-color: #555; background: #2a2a2a; }
-        label { font-size: 0.85rem; color: #aaa; }
-        input[type=color] { padding: 2px 4px; width: 40px; height: 30px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Player Life — IgnasZ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #0a0a0a;
+      border-bottom: 1px solid #1e1e1e;
+      padding: 12px 20px;
+    }
+    .topbar a { color: #888; text-decoration: none; font-size: 0.85rem; }
+    .topbar a:hover { color: #e0e0e0; }
+
+    /* ── Layout ── */
+    .game-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+
+    /* ── Header ── */
+    .game-header { margin-bottom: 14px; }
+    .game-header h1 { margin: 0 0 4px; font-size: 1.5rem; }
+    .lead { margin: 0 0 12px; color: #888; font-size: 0.9rem; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 14px;
+      background: #111;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    #gen-counter { color: #777; }
+    #phase-label { color: #e0e0e0; font-weight: 600; }
+
+    /* ── Canvas ── */
+    .canvas-wrap {
+      margin: 12px 0;
+      background: #0e0e0e;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      overflow: hidden;
+      line-height: 0; /* prevents gap below canvas */
+    }
+    #game-canvas {
+      display: block;
+      touch-action: none; /* prevent scroll interference on touch devices */
+    }
+
+    /* ── Player panels ── */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .panel {
+      background: #111;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .panel-red  { border-left: 3px solid #e84040; }
+    .panel-blue { border-left: 3px solid #4090e8; }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .panel-red  .panel-title { color: #e84040; }
+    .panel-blue .panel-title { color: #4090e8; }
+
+    .stat       { font-size: 0.88rem; color: #ccc; margin-bottom: 3px; }
+    .stat-small { font-size: 0.8rem;  color: #666; margin-bottom: 8px; min-height: 1.1em; }
+
+    /* ── Ready button ── */
+    .btn-ready {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      margin-top: 2px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #161616;
+      color: #bbb;
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .btn-ready:hover:not(:disabled) { background: #1e1e1e; border-color: #444; }
+    .btn-ready:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .panel-red  .btn-ready-active { background: #2a0a0a; border-color: #e84040; color: #e84040; }
+    .panel-blue .btn-ready-active { background: #0a1a2a; border-color: #4090e8; color: #4090e8; }
+
+    /* ── Error message ── */
+    .err-msg {
+      margin-top: 6px;
+      min-height: 1em;
+      font-size: 0.76rem;
+      color: #e84040;
+      white-space: pre-line;
+      line-height: 1.4;
+    }
+
+    /* ── Hint text ── */
+    .hint {
+      margin: 10px 0 0;
+      font-size: 0.76rem;
+      color: #3d3d3d;
+      line-height: 1.45;
+    }
+    .hint strong { color: #555; }
+
+    /* ── New Game button ── */
+    .new-game-row { text-align: center; margin-top: 14px; }
+    .btn-new-game {
+      padding: 10px 32px;
+      background: #161616;
+      border: 1px solid #333;
+      color: #e0e0e0;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .btn-new-game:hover { background: #1e1e1e; border-color: #444; }
+
+    /* ── Rules accordion ── */
+    .rules-details {
+      margin-top: 28px;
+      border: 1px solid #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .rules-details summary {
+      padding: 11px 16px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #555;
+      background: #0d0d0d;
+      list-style: none;
+      user-select: none;
+    }
+    .rules-details summary:hover { color: #888; }
+    .rules-details summary::-webkit-details-marker { display: none; }
+    .rules-details[open] summary { color: #aaa; }
+    .rules-body {
+      padding: 14px 16px;
+      font-size: 0.83rem;
+      color: #888;
+      line-height: 1.75;
+    }
+    .rules-body p          { margin: 0 0 8px; }
+    .rules-body p:last-child { margin-bottom: 0; }
+    .rules-body strong     { color: #bbb; }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .panels { grid-template-columns: 1fr; }
+      .hint   { display: none; }
+    }
+  </style>
 </head>
 <body>
-    <div class="topbar">
-        <a href="../index.html">← IgnasZ</a>
+  <div class="topbar">
+    <a href="../index.html">← IgnasZ</a>
+  </div>
+
+  <div class="game-wrap">
+
+    <div class="game-header">
+      <h1>Two-Player Life</h1>
+      <p class="lead">Competitive cellular automaton — build your colony and outlast your opponent.</p>
+      <div class="status-bar">
+        <span id="gen-counter">Generation 0 / 250</span>
+        <span id="phase-label">Setup — place 10 cells each, then press Ready</span>
+      </div>
     </div>
 
-    <div class="page-header">
-        <h1>Game of Finite Life</h1>
-        <p>Two-player Conway's Game of Life. Draw cells, then start the simulation.</p>
+    <div class="canvas-wrap">
+      <canvas id="game-canvas"></canvas>
     </div>
 
-    <div class="canvas-wrapper">
-        <canvas id="gameCanvas" width="1000" height="1000"></canvas>
+    <div class="panels">
+
+      <div class="panel panel-red">
+        <div class="panel-title">🔴 Red</div>
+        <div id="red-cells"  class="stat">Cells alive: 0</div>
+        <div id="red-placed" class="stat-small"></div>
+        <button id="red-ready" class="btn-ready">Ready</button>
+        <div id="red-error" class="err-msg"></div>
+        <p class="hint">Click the <strong>left half</strong> of the board to stage cells. Click a staged cell again to remove it.</p>
+      </div>
+
+      <div class="panel panel-blue">
+        <div class="panel-title">🔵 Blue</div>
+        <div id="blue-cells"  class="stat">Cells alive: 0</div>
+        <div id="blue-placed" class="stat-small"></div>
+        <button id="blue-ready" class="btn-ready">Ready</button>
+        <div id="blue-error" class="err-msg"></div>
+        <p class="hint">Click the <strong>right half</strong> of the board to stage cells. Click a staged cell again to remove it.</p>
+      </div>
+
     </div>
 
-    <div id="controls">
-        <button id="startButton">Start</button>
-        <button id="stopButton">Stop</button>
-        <button id="resetButton">Reset</button>
-
-        <label for="speedSlider">Speed:</label>
-        <input type="range" id="speedSlider" min="50" max="1000" value="200">
-
-        <label for="gridSizeSelect">Grid:</label>
-        <select id="gridSizeSelect">
-            <option value="10">Small (100×100)</option>
-            <option value="5">Medium (200×200)</option>
-            <option value="3">Large (333×333)</option>
-        </select>
-
-        <label for="brushSizeSelect">Brush:</label>
-        <select id="brushSizeSelect">
-            <option value="1">1×1</option>
-            <option value="3">3×3</option>
-            <option value="5">5×5</option>
-            <option value="10">10×10 (Random)</option>
-            <option value="20">20×20 (Random)</option>
-        </select>
-
-        <label for="player1Color">P1:</label>
-        <input type="color" id="player1Color" value="#ff0000">
-
-        <label for="player2Color">P2:</label>
-        <input type="color" id="player2Color" value="#0000ff">
+    <div class="new-game-row">
+      <button id="new-game" class="btn-new-game" style="display:none">New Game</button>
     </div>
 
-    <script src="gameOfLife.js"></script>
+    <details class="rules-details">
+      <summary>How to play ▸</summary>
+      <div class="rules-body">
+        <p><strong>Setup:</strong> Each player places exactly 10 cells on their side (Red = left half, Blue = right half), then presses Ready. Simulation begins once both are ready.</p>
+        <p><strong>Simulation:</strong> The board evolves automatically for 10 generations. No input during this phase — just watch.</p>
+        <p><strong>Reinforcement:</strong> After each simulation block, both players place 5–10 more cells and press Ready. The cycle repeats.</p>
+        <p><strong>Survival rule:</strong> A cell lives if it has 2–3 same-colour neighbours and at most 3 total living neighbours. Otherwise it dies.</p>
+        <p><strong>Birth rule:</strong> An empty cell with exactly 3 living neighbours is colonised by whichever colour has the majority among those neighbours.</p>
+        <p><strong>Winning:</strong> Eliminate all opponent cells at any point, or have more cells when generation 250 is reached. Equal counts at the cap is a draw.</p>
+      </div>
+    </details>
+
+  </div>
+
+  <script type="module" src="main.js"></script>
 </body>
 </html>
