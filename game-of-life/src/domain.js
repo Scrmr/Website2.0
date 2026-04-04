@@ -40,18 +40,27 @@ export class Position {
 // ── Board ─────────────────────────────────────────────────────────────────────
 
 export class Board {
-  constructor(width, height, cells = null) {
+  /**
+   * @param {number}   width
+   * @param {number}   height
+   * @param {string[][]|null}  cells  — 2D array of CellState values
+   * @param {number[][]|null}  ages   — parallel 2D array; each entry is the
+   *                                    number of consecutive generations the
+   *                                    cell at that position has been alive
+   *                                    (0 = empty / just died).
+   */
+  constructor(width, height, cells = null, ages = null) {
     this.width  = width;
     this.height = height;
     this._cells = cells ?? Array.from({ length: height }, () =>
       new Array(width).fill(CellState.EMPTY));
+    this._ages  = ages  ?? Array.from({ length: height }, () =>
+      new Array(width).fill(0));
   }
 
-  /** Get the state of a cell. Accepts any object with .row and .col. */
-  getCell(pos) { return this._cells[pos.row][pos.col]; }
-
-  /** Fast accessor — avoids creating Position objects in hot loops. */
-  getCellAt(row, col) { return this._cells[row][col]; }
+  getCell(pos)          { return this._cells[pos.row][pos.col]; }
+  getCellAt(row, col)   { return this._cells[row][col]; }
+  getAgeAt(row, col)    { return this._ages[row][col]; }
 
   isInBounds(pos) {
     return pos.row >= 0 && pos.row < this.height &&
@@ -70,20 +79,23 @@ export class Board {
     return result;
   }
 
-  /**
-   * Returns a new Board with the given placements applied.
-   * placements: Array<{ pos: Position, state: CellState }>
-   */
+  /** Returns a new Board with the given placements applied. Newly placed cells start at age 1. */
   withCells(placements) {
-    const cells = this._cells.map(row => [...row]);
+    const cells = this._cells.map(r => [...r]);
+    const ages  = this._ages.map(r => [...r]);
     for (const { pos, state } of placements) {
       cells[pos.row][pos.col] = state;
+      ages[pos.row][pos.col]  = state !== CellState.EMPTY ? 1 : 0;
     }
-    return new Board(this.width, this.height, cells);
+    return new Board(this.width, this.height, cells, ages);
   }
 
   clone() {
-    return new Board(this.width, this.height, this._cells.map(r => [...r]));
+    return new Board(
+      this.width, this.height,
+      this._cells.map(r => [...r]),
+      this._ages.map(r => [...r])
+    );
   }
 }
 
@@ -106,6 +118,11 @@ export class GameSettings {
     this.simulationBlockSize            = overrides.simulationBlockSize            ?? 10;
     this.maxGenerations                 = overrides.maxGenerations                 ?? 250;
     this.simulationStepMs               = overrides.simulationStepMs               ?? 140;
+    // Contested middle strip: both players may place here from this round onward.
+    this.contestedZoneWidth             = overrides.contestedZoneWidth             ?? 4;
+    this.contestedZoneUnlocksAtRound    = overrides.contestedZoneUnlocksAtRound    ?? 3;
+    // Placement timer (seconds per phase; 0 = disabled).
+    this.placementTimerSeconds          = overrides.placementTimerSeconds          ?? 0;
     Object.freeze(this);
   }
 }
@@ -116,6 +133,7 @@ export class Match {
     this.board            = new Board(settings.boardWidth, settings.boardHeight);
     this.phase            = MatchPhase.SETUP_PLACEMENT;
     this.totalGenerations = 0;
+    this.roundNumber      = 1;   // increments after each simulation block
     this.result           = MatchResultType.IN_PROGRESS;
     this.players = {
       [PlayerColor.RED]:  new Player(PlayerColor.RED,  'Red'),
@@ -135,9 +153,6 @@ export class ValidationResult {
 }
 
 // ── Pre-made placement patterns ───────────────────────────────────────────────
-// cells: relative [row, col] offsets from the top-left of the bounding box.
-// mirrorForBlue: when true, the pattern is flipped horizontally for Blue so it
-//   faces toward Red (the opponent on the left).
 
 export const PATTERNS = [
   {

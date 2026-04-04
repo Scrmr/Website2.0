@@ -2,14 +2,12 @@ import { CellState, PlayerColor, MatchPhase, MatchResultType, Position, PATTERNS
 
 // ── Pattern helpers ───────────────────────────────────────────────────────────
 
-/** Mirror a cell array horizontally within its own bounding box. */
 function mirrorH(cells) {
   const cols = cells.map(([, c]) => c);
   const minC = Math.min(...cols), maxC = Math.max(...cols);
   return cells.map(([r, c]) => [r, minC + maxC - c]);
 }
 
-/** Return cells offset so the bounding-box centre is at [0, 0]. */
 function centrePattern(cells) {
   const rows = cells.map(([r]) => r);
   const cols = cells.map(([, c]) => c);
@@ -28,21 +26,16 @@ export class LocalMatchController {
     this._canvas   = null;
     this._ui       = null;
 
-    // Per-player staged cells (not yet committed to the board)
     this._drafts = { [PlayerColor.RED]: [], [PlayerColor.BLUE]: [] };
-
-    // Drag state
-    this._drag = { active: false, mode: null, processed: new Set() };
-
-    // Pattern stamp state
-    this._stamp = { pattern: null, color: null };
-
-    // DOM refs for pattern buttons (populated in attach)
+    this._drag   = { active: false, mode: null, processed: new Set() };
+    this._stamp  = { pattern: null, color: null };
     this._patternBtns = { [PlayerColor.RED]: {}, [PlayerColor.BLUE]: {} };
 
-    this._prevPhase = null;
-    this._handlers  = null;
-    this._newGameCb = null;
+    this._prevPhase    = null;
+    this._handlers     = null;
+    this._newGameCb    = null;
+    this._timerInterval = null;
+    this._timerLeft    = 0;
   }
 
   onNewGame(fn) { this._newGameCb = fn; }
@@ -71,7 +64,6 @@ export class LocalMatchController {
     ui.blueReady.addEventListener('click', () => this._onReady(PlayerColor.BLUE));
     ui.newGame.addEventListener('click',   () => { if (this._newGameCb) this._newGameCb(); });
 
-    // Build pattern buttons for both players
     this._buildPatternButtons(PlayerColor.RED,  ui.redPatterns);
     this._buildPatternButtons(PlayerColor.BLUE, ui.bluePatterns);
 
@@ -86,18 +78,19 @@ export class LocalMatchController {
     this._canvas.removeEventListener('pointerdown',  this._handlers.pointerdown);
     window.removeEventListener('pointerup', this._handlers.pointerup);
     window.removeEventListener('resize',    this._handlers.resize);
+    this._stopTimer();
     this._coord.dispose();
   }
 
-  // ── Pattern button setup ──────────────────────────────────────────────────
+  // ── Pattern buttons ───────────────────────────────────────────────────────
 
   _buildPatternButtons(color, container) {
     container.innerHTML = '';
     for (const pattern of PATTERNS) {
       const btn = document.createElement('button');
-      btn.className   = 'btn-pattern';
-      btn.title       = `${pattern.name} (${pattern.cells.length} cells) — ${pattern.desc}`;
-      btn.innerHTML   =
+      btn.className = 'btn-pattern';
+      btn.title     = `${pattern.name} (${pattern.cells.length} cells) — ${pattern.desc}`;
+      btn.innerHTML =
         `<span class="pat-tag" style="background:${pattern.tagColor}">${pattern.tag}</span>` +
         `<span class="pat-name">${pattern.name}</span>` +
         `<span class="pat-cost">${pattern.cells.length}c</span>`;
@@ -118,32 +111,23 @@ export class LocalMatchController {
   _onPointerDown(e) {
     const phase = this._coord.match.phase;
     if (phase !== MatchPhase.SETUP_PLACEMENT && phase !== MatchPhase.REINFORCEMENT_PLACEMENT) return;
-
-    if (this._stamp.pattern) {
-      // Stamp mode: drop the pattern at the cursor
-      this._doStamp(e);
-    } else {
-      // Free mode: start a drag
-      this._startDrag(e);
-    }
+    if (this._stamp.pattern) { this._doStamp(e); } else { this._startDrag(e); }
   }
 
   _onPointerMove(e) {
-    const pos       = this._getPos(e);
-    const phase     = this._coord.match.phase;
-    const isPlace   = phase === MatchPhase.SETUP_PLACEMENT ||
-                      phase === MatchPhase.REINFORCEMENT_PLACEMENT;
+    const pos     = this._getPos(e);
+    const phase   = this._coord.match.phase;
+    const isPlace = phase === MatchPhase.SETUP_PLACEMENT ||
+                    phase === MatchPhase.REINFORCEMENT_PLACEMENT;
 
     this._renderer.setHover(pos);
     this._updateCursor(pos, isPlace);
 
     if (isPlace) {
       if (this._stamp.pattern && pos) {
-        // Update stamp preview centred on cursor
         const { valid, invalid } = this._computeStampCells(this._stamp.pattern, pos, this._stamp.color);
         this._renderer.setStampPreview(valid, invalid, this._stamp.color);
       } else if (this._drag.active && pos) {
-        // Extend drag to newly-entered cell
         const mid   = Math.floor(this._settings.boardWidth / 2);
         const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
         this._dragProcessCell(pos, color);
@@ -159,18 +143,17 @@ export class LocalMatchController {
     this._drag.processed.clear();
   }
 
-  // ── Drag helpers ──────────────────────────────────────────────────────────
+  // ── Drag ─────────────────────────────────────────────────────────────────
 
   _startDrag(e) {
     const pos = this._getPos(e);
     if (!pos) return;
-
     const mid   = Math.floor(this._settings.boardWidth / 2);
     const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
     if (this._coord.isReady(color)) return;
 
-    const draft  = this._drafts[color];
-    const key    = pos.key();
+    const draft   = this._drafts[color];
+    const key     = pos.key();
     const inDraft = draft.some(p => p.key() === key);
 
     if (inDraft) {
@@ -178,17 +161,16 @@ export class LocalMatchController {
     } else if (this._coord.match.board.getCell(pos) === CellState.EMPTY) {
       this._drag.mode = 'add';
     } else {
-      return; // occupied board cell — can't interact
+      return;
     }
 
-    this._drag.active = true;
+    this._drag.active    = true;
     this._drag.processed = new Set();
     this._dragProcessCell(pos, color);
   }
 
   _dragProcessCell(pos, color) {
     if (!this._drag.active || this._coord.isReady(color)) return;
-
     const key = pos.key();
     if (this._drag.processed.has(key)) return;
     this._drag.processed.add(key);
@@ -198,23 +180,21 @@ export class LocalMatchController {
     const inDraft = idx >= 0;
 
     if (this._drag.mode === 'add' && !inDraft) {
-      const board = this._coord.match.board;
-      if (board.getCell(pos) !== CellState.EMPTY) return;
+      if (this._coord.match.board.getCell(pos) !== CellState.EMPTY) return;
       if (!this._coord.isInPlayerRegion(color, pos)) return;
-      const max = this._coord.getMaxPlaceable(color);
-      if (draft.length >= max) return;
+      if (draft.length >= this._coord.getMaxPlaceable(color)) return;
       draft.push(pos);
     } else if (this._drag.mode === 'remove' && inDraft) {
       draft.splice(idx, 1);
     } else {
-      return; // nothing to do
+      return;
     }
 
     this._coord.updateDraft(color, draft);
     this._renderer.setDraft(color, draft);
   }
 
-  // ── Stamp helpers ─────────────────────────────────────────────────────────
+  // ── Stamp ─────────────────────────────────────────────────────────────────
 
   _toggleStampMode(pattern, color) {
     const phase = this._coord.match.phase;
@@ -222,7 +202,6 @@ export class LocalMatchController {
 
     const same = this._stamp.pattern?.id === pattern.id && this._stamp.color === color;
     if (same) {
-      // Deselect
       this._stamp = { pattern: null, color: null };
       this._renderer.clearStampPreview();
     } else {
@@ -240,7 +219,7 @@ export class LocalMatchController {
     const { valid } = this._computeStampCells(pattern, pos, color);
     if (valid.length === 0) return;
 
-    const draft   = this._drafts[color];
+    const draft    = this._drafts[color];
     const draftKeys = new Set(draft.map(p => p.key()));
     for (const p of valid) {
       if (!draftKeys.has(p.key())) draft.push(p);
@@ -251,48 +230,34 @@ export class LocalMatchController {
     this._doRender();
   }
 
-  /**
-   * For a given pattern and cursor position, compute which cells would be placed
-   * (valid) and which are blocked or over-budget (invalid).
-   */
   _computeStampCells(pattern, cursor, color) {
     let cells = [...pattern.cells];
-
-    // Mirror horizontally for Blue on patterns that have directionality
-    if (pattern.mirrorForBlue && color === PlayerColor.BLUE) {
-      cells = mirrorH(cells);
-    }
-
+    if (pattern.mirrorForBlue && color === PlayerColor.BLUE) cells = mirrorH(cells);
     const centred = centrePattern(cells);
-    const board   = this._coord.match.board;
-    const draft   = this._drafts[color];
+
+    const board     = this._coord.match.board;
+    const draft     = this._drafts[color];
     const draftKeys = new Set(draft.map(p => p.key()));
     const remaining = this._coord.getMaxPlaceable(color) - draft.length;
 
-    const valid   = [];
-    const invalid = [];
+    const valid = [], invalid = [];
     let validCount = 0;
 
     for (const [dr, dc] of centred) {
       const pos = new Position(cursor.row + dr, cursor.col + dc);
-      if (!board.isInBounds(pos)) continue; // don't show out-of-bounds
+      if (!board.isInBounds(pos)) continue;
 
       const ok = board.getCell(pos) === CellState.EMPTY &&
                  this._coord.isInPlayerRegion(color, pos) &&
                  !draftKeys.has(pos.key());
 
-      if (ok && validCount < remaining) {
-        valid.push(pos);
-        validCount++;
-      } else {
-        invalid.push(pos);
-      }
+      if (ok && validCount < remaining) { valid.push(pos); validCount++; }
+      else                              { invalid.push(pos); }
     }
-
     return { valid, invalid };
   }
 
-  // ── Ready / error ─────────────────────────────────────────────────────────
+  // ── Ready ─────────────────────────────────────────────────────────────────
 
   _onReady(color) {
     const phase = this._coord.match.phase;
@@ -314,12 +279,48 @@ export class LocalMatchController {
     el._t = setTimeout(() => { el.textContent = ''; }, 4000);
   }
 
+  // ── Timer ─────────────────────────────────────────────────────────────────
+
+  _startTimer() {
+    if (!this._settings.placementTimerSeconds) return;
+    this._timerLeft = this._settings.placementTimerSeconds;
+    this._renderTimer();
+    this._timerInterval = setInterval(() => {
+      this._timerLeft--;
+      this._renderTimer();
+      if (this._timerLeft <= 0) {
+        this._stopTimer();
+        this._forceReady();
+      }
+    }, 1000);
+  }
+
+  _stopTimer() {
+    if (this._timerInterval) { clearInterval(this._timerInterval); this._timerInterval = null; }
+    if (this._ui?.timer) {
+      this._ui.timer.textContent = '';
+      this._ui.timer.classList.remove('timer-urgent');
+    }
+  }
+
+  _renderTimer() {
+    if (!this._ui?.timer) return;
+    this._ui.timer.textContent = `⏱ ${this._timerLeft}s`;
+    this._ui.timer.classList.toggle('timer-urgent', this._timerLeft <= 8);
+  }
+
+  _forceReady() {
+    for (const color of [PlayerColor.RED, PlayerColor.BLUE]) {
+      if (!this._coord.isReady(color)) this._coord.setReady(color, true);
+    }
+  }
+
   // ── Cursor ────────────────────────────────────────────────────────────────
 
   _updateCursor(pos, isPlacement) {
-    if (!isPlacement) { this._canvas.style.cursor = 'default'; return; }
-    if (this._stamp.pattern) { this._canvas.style.cursor = 'copy'; return; }
-    if (!pos) { this._canvas.style.cursor = 'default'; return; }
+    if (!isPlacement)          { this._canvas.style.cursor = 'default';    return; }
+    if (this._stamp.pattern)   { this._canvas.style.cursor = 'copy';       return; }
+    if (!pos)                  { this._canvas.style.cursor = 'default';    return; }
     const mid   = Math.floor(this._settings.boardWidth / 2);
     const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
     this._canvas.style.cursor = this._coord.isReady(color) ? 'not-allowed' : 'crosshair';
@@ -333,7 +334,7 @@ export class LocalMatchController {
     this._doRender();
   }
 
-  // ── Position hit-test ─────────────────────────────────────────────────────
+  // ── Hit-test ──────────────────────────────────────────────────────────────
 
   _getPos(e) {
     const rect   = this._canvas.getBoundingClientRect();
@@ -350,30 +351,84 @@ export class LocalMatchController {
     return new Position(row, col);
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Sparkline ─────────────────────────────────────────────────────────────
+
+  _drawSparkline(canvas, history, color) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    if (history.length < 2) return;
+
+    const n   = history.length;
+    const max = Math.max(...history) || 1;
+    const toX = i => (i / (n - 1)) * W;
+    const toY = v => H - 2 - ((v / max) * (H - 4));
+
+    const lineColor = color === PlayerColor.RED ? '#e84040' : '#4090e8';
+    const fillColor = color === PlayerColor.RED ? 'rgba(232,64,64,0.14)' : 'rgba(64,144,232,0.14)';
+
+    // Fill area
+    ctx.beginPath();
+    ctx.moveTo(toX(0), H);
+    history.forEach((v, i) => ctx.lineTo(toX(i), toY(v)));
+    ctx.lineTo(toX(n - 1), H);
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    history.forEach((v, i) => i === 0 ? ctx.moveTo(toX(0), toY(v)) : ctx.lineTo(toX(i), toY(v)));
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+
+    // End dot
+    ctx.beginPath();
+    ctx.arc(toX(n - 1), toY(history[n - 1]), 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = lineColor;
+    ctx.fill();
+  }
+
+  // ── Main render ───────────────────────────────────────────────────────────
 
   _doRender() {
     const match   = this._coord.match;
     const { phase, board, result, totalGenerations, settings } = match;
+    const roundNumber = this._coord.getRoundNumber();
 
-    // When transitioning into simulation, clear local draft state
+    // ── Phase transition handling ──
+    const isPlacement = phase === MatchPhase.SETUP_PLACEMENT ||
+                        phase === MatchPhase.REINFORCEMENT_PLACEMENT;
+    const wasPlacement = this._prevPhase === MatchPhase.SETUP_PLACEMENT ||
+                         this._prevPhase === MatchPhase.REINFORCEMENT_PLACEMENT;
+
+    if (isPlacement && !wasPlacement) {
+      // Just entered a placement phase — start timer
+      this._startTimer();
+    }
+
     if (phase === MatchPhase.SIMULATION && this._prevPhase !== MatchPhase.SIMULATION) {
+      // Just entered simulation — stop timer, clear drafts and stamp
+      this._stopTimer();
       for (const color of [PlayerColor.RED, PlayerColor.BLUE]) {
         this._drafts[color] = [];
         this._renderer.setDraft(color, []);
       }
-      // Also exit stamp mode
       this._stamp = { pattern: null, color: null };
       this._renderer.clearStampPreview();
     }
+
     this._prevPhase = phase;
 
+    // ── Draw board ──
     const redReady  = this._coord.isReady(PlayerColor.RED);
     const blueReady = this._coord.isReady(PlayerColor.BLUE);
     this._renderer.setReadyStates(redReady, blueReady);
-    this._renderer.render(board, phase);
+    this._renderer.render(board, phase, roundNumber);
 
-    // ── Live cell counts ──
+    // ── Cell counts ──
     let red = 0, blue = 0;
     for (let r = 0; r < board.height; r++) {
       for (let c = 0; c < board.width; c++) {
@@ -382,32 +437,39 @@ export class LocalMatchController {
         else if (s === 'blue') blue++;
       }
     }
+    const total = red + blue;
 
-    const isPlacement = phase === MatchPhase.SETUP_PLACEMENT ||
-                        phase === MatchPhase.REINFORCEMENT_PLACEMENT;
-    const isSetup     = phase === MatchPhase.SETUP_PLACEMENT;
-    const redDraft    = this._drafts[PlayerColor.RED].length;
-    const blueDraft   = this._drafts[PlayerColor.BLUE].length;
-    const redMax      = this._coord.getMaxPlaceable(PlayerColor.RED);
-    const blueMax     = this._coord.getMaxPlaceable(PlayerColor.BLUE);
-    const redBank     = this._coord.getBank(PlayerColor.RED);
-    const blueBank    = this._coord.getBank(PlayerColor.BLUE);
-    const { reinforcementMinPlacementCount: minR } = settings;
+    // ── Dominance bar ──
+    const redPct = total > 0 ? Math.round((red / total) * 100) : 50;
+    if (this._ui.domRed && this._ui.domBlue) {
+      this._ui.domRed.style.width  = redPct + '%';
+      this._ui.domBlue.style.width = (100 - redPct) + '%';
+    }
+    if (this._ui.domRedPct)  this._ui.domRedPct.textContent  = total > 0 ? redPct + '%'           : '–';
+    if (this._ui.domBluePct) this._ui.domBluePct.textContent = total > 0 ? (100 - redPct) + '%'   : '–';
 
     // ── Status bar ──
-    this._ui.genCounter.textContent = `Generation ${totalGenerations} / ${settings.maxGenerations}`;
+    this._ui.genCounter.textContent = `Gen ${totalGenerations} / ${settings.maxGenerations}`;
 
     let phaseText = '';
     switch (phase) {
       case MatchPhase.SETUP_PLACEMENT:
-        phaseText = `Setup — place ${settings.initialPlacementCount} cells each, then press Ready`;
+        phaseText = `Round 1 · Setup — place ${settings.initialPlacementCount} cells each`;
         break;
       case MatchPhase.SIMULATION:
-        phaseText = 'Simulating…';
+        phaseText = `Round ${roundNumber} · Simulating…`;
         break;
-      case MatchPhase.REINFORCEMENT_PLACEMENT:
-        phaseText = `Reinforcement — place ${minR}–${redMax} cells (Red) / ${minR}–${blueMax} (Blue)`;
+      case MatchPhase.REINFORCEMENT_PLACEMENT: {
+        const redMax  = this._coord.getMaxPlaceable(PlayerColor.RED);
+        const blueMax = this._coord.getMaxPlaceable(PlayerColor.BLUE);
+        const isContest = settings.contestedZoneWidth > 0 &&
+                          roundNumber >= settings.contestedZoneUnlocksAtRound;
+        phaseText = `Round ${roundNumber} · Reinforce` +
+          (isContest ? ' · ⚔ contested zone open' : '');
+        // player-specific budgets handled in panel labels
+        void redMax; void blueMax;
         break;
+      }
       case MatchPhase.ENDED:
         if      (result === MatchResultType.RED_VICTORY)  phaseText = 'Red wins!';
         else if (result === MatchResultType.BLUE_VICTORY) phaseText = 'Blue wins!';
@@ -417,33 +479,55 @@ export class LocalMatchController {
     this._ui.phaseLabel.textContent = phaseText;
 
     // ── Player panels ──
+    const isSetup  = phase === MatchPhase.SETUP_PLACEMENT;
     const simRunning = phase === MatchPhase.SIMULATION;
-    for (const [color, alive, staged, max, bank, readyEl, cellsEl, placedEl, bankEl, errorEl, patternBtns] of [
-      [PlayerColor.RED,  red,  redDraft,  redMax,  redBank,  this._ui.redReady,  this._ui.redCells,  this._ui.redPlaced,  this._ui.redBank,  this._ui.redError,  this._patternBtns[PlayerColor.RED]],
-      [PlayerColor.BLUE, blue, blueDraft, blueMax, blueBank, this._ui.blueReady, this._ui.blueCells, this._ui.bluePlaced, this._ui.blueBank, this._ui.blueError, this._patternBtns[PlayerColor.BLUE]],
-    ]) {
-      const isReady = this._coord.isReady(color);
+    const { reinforcementMinPlacementCount: minR } = settings;
 
-      cellsEl.textContent  = `Cells alive: ${alive}`;
-      placedEl.textContent = isPlacement
-        ? `Staged: ${staged} / ${max}` + (isSetup ? '' : ` (min ${minR})`)
-        : '';
-      bankEl.textContent   = (isPlacement && !isSetup && bank > 0) ? `Bank: +${bank}` : '';
+    for (const [color, alive, readyEl, cellsEl, placedEl, bankEl, catchupEl, errorEl, patternBtns, sparkCanvas] of [
+      [PlayerColor.RED,  red,
+        this._ui.redReady, this._ui.redCells, this._ui.redPlaced,
+        this._ui.redBank, this._ui.redCatchup, this._ui.redError,
+        this._patternBtns[PlayerColor.RED], this._ui.redSpark],
+      [PlayerColor.BLUE, blue,
+        this._ui.blueReady, this._ui.blueCells, this._ui.bluePlaced,
+        this._ui.blueBank, this._ui.blueCatchup, this._ui.blueError,
+        this._patternBtns[PlayerColor.BLUE], this._ui.blueSpark],
+    ]) {
+      const isReady  = this._coord.isReady(color);
+      const staged   = this._drafts[color].length;
+      const maxBudget = this._coord.getMaxPlaceable(color);
+      const bank     = this._coord.getBank(color);
+      const catchup  = this._coord.getCatchupBonus(color);
+
+      cellsEl.textContent = `Cells alive: ${alive}`;
+
+      if (isPlacement) {
+        placedEl.textContent = isSetup
+          ? `Staged: ${staged} / ${maxBudget}`
+          : `Staged: ${staged} / ${maxBudget}  (min ${minR})`;
+      } else {
+        placedEl.textContent = '';
+      }
+
+      bankEl.textContent    = (!isSetup && bank > 0)    ? `Bank +${bank}`    : '';
+      catchupEl.textContent = (!isSetup && catchup > 0) ? `+${catchup} catch-up` : '';
 
       readyEl.disabled     = !isPlacement || simRunning;
       readyEl.textContent  = isReady ? 'Cancel' : 'Ready';
       readyEl.classList.toggle('btn-ready-active', isReady);
 
-      // Pattern buttons: highlight active, hide during non-placement phases
+      // Pattern buttons
       const showPatterns = isPlacement && !simRunning;
       for (const pattern of PATTERNS) {
         const btn = patternBtns[pattern.id];
         if (!btn) continue;
         btn.disabled = !showPatterns || isReady;
         btn.classList.toggle('active',
-          this._stamp.pattern?.id === pattern.id && this._stamp.color === color
-        );
+          this._stamp.pattern?.id === pattern.id && this._stamp.color === color);
       }
+
+      // Sparkline
+      this._drawSparkline(sparkCanvas, this._coord.getHistory(color), color);
     }
 
     this._ui.newGame.style.display = phase === MatchPhase.ENDED ? 'inline-block' : 'none';

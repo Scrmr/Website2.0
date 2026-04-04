@@ -291,6 +291,60 @@
     .rules-body p:last-child { margin-bottom: 0; }
     .rules-body strong { color: #aaa; }
 
+    /* Dominance bar */
+    .dom-bar {
+      display: flex;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      background: #111;
+    }
+    .dom-seg {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      transition: width 0.35s ease;
+      min-width: 0;
+      overflow: hidden;
+    }
+    #dom-red  { background: rgba(232,64,64,0.55);  justify-content: flex-start; }
+    #dom-blue { background: rgba(64,144,232,0.55); justify-content: flex-end; }
+    .dom-pct {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    /* Timer */
+    #timer {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #888;
+      margin-left: auto;
+    }
+    #timer.timer-urgent { color: #e84040; }
+
+    /* Sparkline */
+    .sparkline {
+      display: block;
+      width: 100%;
+      height: 36px;
+      margin-top: 6px;
+      border-radius: 4px;
+      background: #0d0d0d;
+    }
+
+    /* Catch-up */
+    .stat-catchup {
+      font-size: 0.78rem;
+      color: #f2994a;
+      font-weight: 600;
+      min-height: 1em;
+    }
+
     /* Responsive */
     @media (max-width: 500px) {
       .panels { grid-template-columns: 1fr; }
@@ -367,6 +421,18 @@
     <p class="setting-desc">If neither player is eliminated, the player with more cells at the cap wins.</p>
   </div>
 
+  <!-- Placement timer -->
+  <div class="setting-group">
+    <span class="setting-label">Placement timer</span>
+    <div class="toggle-row">
+      <button class="btn-opt opt-timer active" data-val="0">Off</button>
+      <button class="btn-opt opt-timer" data-val="20">20 s</button>
+      <button class="btn-opt opt-timer" data-val="30">30 s</button>
+      <button class="btn-opt opt-timer" data-val="45">45 s</button>
+    </div>
+    <p class="setting-desc">When time runs out, both players are force-readied with whatever cells they staged.</p>
+  </div>
+
   <button id="start-btn" class="btn-start">Start Game</button>
 
 </div>
@@ -380,6 +446,12 @@
   <div class="status-bar">
     <span id="gen-counter">Generation 0 / 250</span>
     <span id="phase-label">Setup — place cells, then press Ready</span>
+    <span id="timer"></span>
+  </div>
+
+  <div class="dom-bar">
+    <div id="dom-red"  class="dom-seg"><span class="dom-pct" id="dom-red-pct">–</span></div>
+    <div id="dom-blue" class="dom-seg"><span class="dom-pct" id="dom-blue-pct">–</span></div>
   </div>
 
   <div class="canvas-wrap">
@@ -392,13 +464,15 @@
     <div class="panel panel-red">
       <div class="panel-title">🔴 Red</div>
       <div class="panel-stats">
-        <div id="red-cells"  class="stat">Cells alive: 0</div>
-        <div id="red-bank"   class="stat-bank"></div>
+        <div id="red-cells"   class="stat">Cells alive: 0</div>
+        <div id="red-bank"    class="stat-bank"></div>
+        <div id="red-catchup" class="stat-catchup"></div>
       </div>
       <div id="red-placed" class="stat-small"></div>
       <button id="red-ready" class="btn-ready">Ready</button>
       <div id="red-error" class="err-msg"></div>
       <div id="red-patterns" class="pattern-row"></div>
+      <canvas id="red-spark" class="sparkline" width="200" height="36"></canvas>
       <p class="hint">Click or <strong>drag</strong> the <strong>left half</strong> to place cells. Click staged cells to remove. Select a pattern to stamp it.</p>
     </div>
 
@@ -406,13 +480,15 @@
     <div class="panel panel-blue">
       <div class="panel-title">🔵 Blue</div>
       <div class="panel-stats">
-        <div id="blue-cells"  class="stat">Cells alive: 0</div>
-        <div id="blue-bank"   class="stat-bank"></div>
+        <div id="blue-cells"   class="stat">Cells alive: 0</div>
+        <div id="blue-bank"    class="stat-bank"></div>
+        <div id="blue-catchup" class="stat-catchup"></div>
       </div>
       <div id="blue-placed" class="stat-small"></div>
       <button id="blue-ready" class="btn-ready">Ready</button>
       <div id="blue-error" class="err-msg"></div>
       <div id="blue-patterns" class="pattern-row"></div>
+      <canvas id="blue-spark" class="sparkline" width="200" height="36"></canvas>
       <p class="hint">Click or <strong>drag</strong> the <strong>right half</strong> to place cells. Click staged cells to remove. Select a pattern to stamp it.</p>
     </div>
 

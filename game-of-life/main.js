@@ -44,6 +44,7 @@ function readSettings() {
   const grid  = GRID_PRESETS[document.querySelector('.opt-grid.active')?.dataset.val  ?? 'medium'];
   const speed = SPEED_PRESETS[document.querySelector('.opt-speed.active')?.dataset.val ?? 'normal'];
   const gens  = parseInt(document.querySelector('.opt-gens.active')?.dataset.val ?? '250', 10);
+  const timer = parseInt(document.querySelector('.opt-timer.active')?.dataset.val ?? '0',  10);
 
   const setupCells = clamp(parseInt(document.getElementById('s-setup').value,  10), 1, 30);
   const reinMin    = clamp(parseInt(document.getElementById('s-rmin').value,   10), 1, 20);
@@ -56,6 +57,7 @@ function readSettings() {
     reinforcementMaxPlacementCount:  reinMax,
     simulationStepMs:                speed,
     maxGenerations:                  gens,
+    placementTimerSeconds:           timer,
   });
 }
 
@@ -75,6 +77,7 @@ function setupToggleGroup(selector) {
 setupToggleGroup('.opt-grid');
 setupToggleGroup('.opt-speed');
 setupToggleGroup('.opt-gens');
+setupToggleGroup('.opt-timer');
 
 // ── Game lifecycle ────────────────────────────────────────────────────────────
 
@@ -102,18 +105,27 @@ function startGame(settings) {
   ctrl.attach(canvas, {
     genCounter:  document.getElementById('gen-counter'),
     phaseLabel:  document.getElementById('phase-label'),
+    timer:       document.getElementById('timer'),
+    domRed:      document.getElementById('dom-red'),
+    domBlue:     document.getElementById('dom-blue'),
+    domRedPct:   document.getElementById('dom-red-pct'),
+    domBluePct:  document.getElementById('dom-blue-pct'),
     redCells:    document.getElementById('red-cells'),
     redPlaced:   document.getElementById('red-placed'),
     redBank:     document.getElementById('red-bank'),
+    redCatchup:  document.getElementById('red-catchup'),
     redReady:    document.getElementById('red-ready'),
     redError:    document.getElementById('red-error'),
     redPatterns: document.getElementById('red-patterns'),
+    redSpark:    document.getElementById('red-spark'),
     blueCells:   document.getElementById('blue-cells'),
     bluePlaced:  document.getElementById('blue-placed'),
     blueBank:    document.getElementById('blue-bank'),
+    blueCatchup: document.getElementById('blue-catchup'),
     blueReady:   document.getElementById('blue-ready'),
     blueError:   document.getElementById('blue-error'),
     bluePatterns:document.getElementById('blue-patterns'),
+    blueSpark:   document.getElementById('blue-spark'),
     newGame:     document.getElementById('new-game'),
   });
 

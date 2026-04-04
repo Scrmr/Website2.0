@@ -1,22 +1,42 @@
 import { CellState, PlayerColor, MatchPhase } from './domain.js';
 
+// Maximum age at which tinting is fully applied (cells older than this
+// look the same as cells at this age).
+const MAX_TINT_AGE = 18;
+
 const C = {
   bg:           '#0e0e0e',
-  red:          '#e84040',
-  blue:         '#4090e8',
+  grid:         '#1a1a1a',
+  divider:      '#484848',
+  redSide:      'rgba(232,64,64,0.032)',
+  blueSide:     'rgba(64,144,232,0.032)',
+  // Draft overlays
   redDraft:     'rgba(232,64,64,0.55)',
   blueDraft:    'rgba(64,144,232,0.55)',
   redDraftDim:  'rgba(232,64,64,0.18)',
   blueDraftDim: 'rgba(64,144,232,0.18)',
+  // Hover
   redHover:     'rgba(232,64,64,0.28)',
   blueHover:    'rgba(64,144,232,0.28)',
-  redSide:      'rgba(232,64,64,0.032)',
-  blueSide:     'rgba(64,144,232,0.032)',
+  // Stamp preview
   stampValid:   { red: 'rgba(232,64,64,0.75)', blue: 'rgba(64,144,232,0.75)' },
-  stampInvalid: 'rgba(180,60,60,0.22)',
-  grid:         '#1a1a1a',
-  divider:      '#484848',
+  stampInvalid: 'rgba(160,50,50,0.22)',
+  // Contested zone
+  contestedTint:   'rgba(255,200,50,0.04)',
+  contestedBorder: 'rgba(255,200,50,0.22)',
 };
+
+/** Returns the HSL fill color for a live cell given its colour and age. */
+function liveCellColor(state, age) {
+  const t = Math.min(age / MAX_TINT_AGE, 1); // 0 = newborn, 1 = veteran
+  if (state === CellState.RED) {
+    // lightness: 38% (young) → 58% (veteran)
+    return `hsl(0,74%,${38 + t * 20}%)`;
+  } else {
+    // lightness: 46% (young) → 66% (veteran)
+    return `hsl(213,74%,${46 + t * 20}%)`;
+  }
+}
 
 export class GameRenderer {
   constructor(canvas, settings) {
@@ -62,19 +82,26 @@ export class GameRenderer {
     this._canvas.height = this._s * boardHeight;
   }
 
-  render(board, phase) {
-    const { boardWidth, boardHeight } = this._settings;
+  /**
+   * @param {Board}      board
+   * @param {string}     phase       — MatchPhase value
+   * @param {number}     roundNumber — used to determine if contested zone is active
+   */
+  render(board, phase, roundNumber = 1) {
+    const { boardWidth, boardHeight, contestedZoneWidth, contestedZoneUnlocksAtRound } = this._settings;
     const s   = this._s;
     const ctx = this._ctx;
     const mid = Math.floor(boardWidth / 2);
     const isPlacement = phase === MatchPhase.SETUP_PLACEMENT ||
                         phase === MatchPhase.REINFORCEMENT_PLACEMENT;
+    const isContested = contestedZoneWidth > 0 &&
+                        roundNumber >= contestedZoneUnlocksAtRound;
 
-    // Background
+    // ── Background ──
     ctx.fillStyle = C.bg;
     ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
 
-    // Subtle side tints during placement
+    // ── Side tints ──
     if (isPlacement) {
       ctx.fillStyle = C.redSide;
       ctx.fillRect(0, 0, mid * s, this._canvas.height);
@@ -82,16 +109,23 @@ export class GameRenderer {
       ctx.fillRect(mid * s, 0, this._canvas.width - mid * s, this._canvas.height);
     }
 
-    // Cells and draft overlays
+    // ── Contested zone overlay ──
+    if (isContested && isPlacement) {
+      const halfC  = Math.floor(contestedZoneWidth / 2);
+      const cStart = mid - halfC;
+      ctx.fillStyle = C.contestedTint;
+      ctx.fillRect(cStart * s, 0, contestedZoneWidth * s, this._canvas.height);
+    }
+
+    // ── Cells ──
     for (let r = 0; r < boardHeight; r++) {
       for (let c = 0; c < boardWidth; c++) {
         const state = board.getCellAt(r, c);
         let color   = null;
 
-        if (state === CellState.RED) {
-          color = C.red;
-        } else if (state === CellState.BLUE) {
-          color = C.blue;
+        if (state === CellState.RED || state === CellState.BLUE) {
+          // Age-tinted live cell
+          color = liveCellColor(state, board.getAgeAt(r, c));
         } else if (isPlacement) {
           const k = `${r},${c}`;
           if (this._draft[PlayerColor.RED].has(k)) {
@@ -108,11 +142,9 @@ export class GameRenderer {
       }
     }
 
-    // Stamp preview (drawn on top of draft, below grid lines)
+    // ── Stamp preview ──
     if (this._stamp && isPlacement) {
-      const validColor   = C.stampValid[this._stamp.color] ?? C.stampValid.red;
-      const invalidColor = C.stampInvalid;
-
+      const validColor = C.stampValid[this._stamp.color] ?? C.stampValid.red;
       for (const key of this._stamp.valid) {
         const [r, c] = key.split(',').map(Number);
         if (r >= 0 && r < boardHeight && c >= 0 && c < boardWidth) {
@@ -123,29 +155,38 @@ export class GameRenderer {
       for (const key of this._stamp.invalid) {
         const [r, c] = key.split(',').map(Number);
         if (r >= 0 && r < boardHeight && c >= 0 && c < boardWidth) {
-          ctx.fillStyle = invalidColor;
+          ctx.fillStyle = C.stampInvalid;
           ctx.fillRect(c * s + 1, r * s + 1, s - 1, s - 1);
         }
       }
     }
 
-    // Grid lines
+    // ── Grid lines ──
     if (s >= 6) {
       ctx.strokeStyle = C.grid;
       ctx.lineWidth   = 0.5;
       ctx.beginPath();
-      for (let c = 0; c <= boardWidth;  c++) {
-        ctx.moveTo(c * s, 0);
-        ctx.lineTo(c * s, this._canvas.height);
-      }
-      for (let r = 0; r <= boardHeight; r++) {
-        ctx.moveTo(0, r * s);
-        ctx.lineTo(this._canvas.width, r * s);
-      }
+      for (let c = 0; c <= boardWidth;  c++) { ctx.moveTo(c * s, 0); ctx.lineTo(c * s, this._canvas.height); }
+      for (let r = 0; r <= boardHeight; r++) { ctx.moveTo(0, r * s); ctx.lineTo(this._canvas.width, r * s); }
       ctx.stroke();
     }
 
-    // Centre divider
+    // ── Contested zone dashed borders ──
+    if (isContested) {
+      const halfC  = Math.floor(contestedZoneWidth / 2);
+      const cStart = mid - halfC;
+      const cEnd   = mid + halfC;
+      ctx.strokeStyle = C.contestedBorder;
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cStart * s, 0); ctx.lineTo(cStart * s, this._canvas.height);
+      ctx.moveTo(cEnd   * s, 0); ctx.lineTo(cEnd   * s, this._canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // ── Centre divider ──
     ctx.strokeStyle = C.divider;
     ctx.lineWidth   = 2;
     ctx.beginPath();
@@ -153,7 +194,7 @@ export class GameRenderer {
     ctx.lineTo(mid * s, this._canvas.height);
     ctx.stroke();
 
-    // Hover highlight (only when not in stamp mode, stamp shows its own preview)
+    // ── Hover ──
     if (this._hover && isPlacement && !this._stamp) {
       const { row, col } = this._hover;
       const isRed = col < mid;
