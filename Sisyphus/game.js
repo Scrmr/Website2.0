@@ -1,5 +1,9 @@
 // game.js
 
+const API_BASE = (window.location.protocol === 'file:' || window.location.hostname === 'localhost')
+  ? 'http://localhost:8080'
+  : 'https://poemgenerator-492211.appspot.com';
+
 const playerChoices = [];
 const results = [];
 let round = 0;
@@ -60,7 +64,7 @@ document.getElementById('submit-user-phrase').addEventListener('click', handleUs
 
 async function fetchAndDisplayPhrases(poemSoFar, lineNumber) {
     try {
-        const response = await fetch('http://localhost:3000/api/generatePhrases', {
+        const response = await fetch(`${API_BASE}/api/generatePhrases`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ poemSoFar, lineNumber }),

@@ -31,7 +31,7 @@ function pickEncryptedIndices(tokens) {
   return shuffled.slice(0, count).sort((a, b) => a - b);
 }
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({ status: 'ok', message: 'cypherpoem server is running' });
 });
 
@@ -64,6 +64,44 @@ app.post('/generate-poem', async (req, res) => {
   } catch (err) {
     console.error('OpenAI error:', err.message);
     res.status(500).json({ error: 'Failed to generate poem.' });
+  }
+});
+
+app.post('/api/generatePhrases', async (req, res) => {
+  const { poemSoFar, lineNumber } = req.body;
+
+  const context = poemSoFar && poemSoFar.length > 0
+    ? `The poem so far:\n${poemSoFar.join('\n')}\n\nNow generate options for line ${lineNumber}.`
+    : 'Generate options for the opening line of a poem.';
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a poet. Given a poem in progress, generate exactly 3 distinct short lines (5–10 words each) ' +
+            'that could naturally continue it. Each line should have a different tone or direction. ' +
+            'Return ONLY a JSON object in this exact format: { "phrases": ["line one", "line two", "line three"] }',
+        },
+        { role: 'user', content: context },
+      ],
+      temperature: 0.9,
+      response_format: { type: 'json_object' },
+    });
+
+    const parsed = JSON.parse(completion.choices[0].message.content);
+    const phrases = parsed.phrases;
+
+    if (!Array.isArray(phrases) || phrases.length < 3) {
+      return res.status(500).json({ error: 'Unexpected response format from AI.' });
+    }
+
+    res.json({ phrases: phrases.slice(0, 3) });
+  } catch (err) {
+    console.error('OpenAI error:', err.message);
+    res.status(500).json({ error: 'Failed to generate phrases.' });
   }
 });
 
