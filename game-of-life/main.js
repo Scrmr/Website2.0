@@ -11,8 +11,9 @@ import { PlacementSubmissionService, MatchFlowCoordinator } from './src/applicat
 import { GameRenderer }                                     from './src/renderer.js';
 import { HexGameRenderer }                                  from './src/hex-renderer.js';
 import { LocalMatchController }                             from './src/controller.js';
+import { OnlineMatchController }                            from './src/online-controller.js';
 
-// Screens
+// ── Screens ───────────────────────────────────────────────────────────────────
 
 const settingsScreen = document.getElementById('settings-screen');
 const gameScreen     = document.getElementById('game-screen');
@@ -46,7 +47,7 @@ function showGame() {
   gameScreen.style.display     = 'block';
 }
 
-// Settings reading
+// ── Settings reading ──────────────────────────────────────────────────────────
 
 const MODE_PRESETS = {
   square: {
@@ -74,10 +75,10 @@ const GRID_PRESETS = {
 };
 
 const SPEED_PRESETS = {
-  slow:   { stepMs: 280, label: 'Slow',  help: 'You get more time to read each simulation block.' },
+  slow:   { stepMs: 280, label: 'Slow',   help: 'You get more time to read each simulation block.' },
   normal: { stepMs: 140, label: 'Normal', help: 'A balanced default that still lets patterns breathe.' },
-  fast:   { stepMs: 60,  label: 'Fast',  help: 'Rounds resolve quickly and reward intuition.' },
-  blitz:  { stepMs: 25,  label: 'Blitz', help: 'Pure chaos pace for short, high-energy games.' },
+  fast:   { stepMs: 60,  label: 'Fast',   help: 'Rounds resolve quickly and reward intuition.' },
+  blitz:  { stepMs: 25,  label: 'Blitz',  help: 'Pure chaos pace for short, high-energy games.' },
 };
 
 const GENERATION_PRESETS = {
@@ -112,9 +113,23 @@ function readSettings() {
   });
 }
 
-function clamp(v, lo, hi) {
-  return Math.max(lo, Math.min(hi, v));
+function settingsToPlain(settings) {
+  return {
+    boardWidth:                     settings.boardWidth,
+    boardHeight:                    settings.boardHeight,
+    initialPlacementCount:          settings.initialPlacementCount,
+    reinforcementMinPlacementCount: settings.reinforcementMinPlacementCount,
+    reinforcementMaxPlacementCount: settings.reinforcementMaxPlacementCount,
+    simulationBlockSize:            settings.simulationBlockSize,
+    maxGenerations:                 settings.maxGenerations,
+    simulationStepMs:               settings.simulationStepMs,
+    contestedZoneWidth:             settings.contestedZoneWidth,
+    contestedZoneUnlocksAtRound:    settings.contestedZoneUnlocksAtRound,
+    placementTimerSeconds:          settings.placementTimerSeconds,
+  };
 }
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 function activeOptionValue(selector, fallback) {
   return document.querySelector(`${selector}.active`)?.dataset.val ?? fallback;
@@ -126,8 +141,8 @@ function readPlacementInputs(commit = false) {
   const maxRaw   = parseInt(settingsUI.reinMaxInput.value, 10);
 
   const setupCells = clamp(Number.isNaN(setupRaw) ? 10 : setupRaw, 1, 30);
-  const reinMin    = clamp(Number.isNaN(minRaw) ? 5 : minRaw, 1, 20);
-  const reinMax    = clamp(Number.isNaN(maxRaw) ? 10 : maxRaw, reinMin, 40);
+  const reinMin    = clamp(Number.isNaN(minRaw)   ? 5  : minRaw,   1, 20);
+  const reinMax    = clamp(Number.isNaN(maxRaw)   ? 10 : maxRaw,   reinMin, 40);
 
   if (commit) {
     settingsUI.setupInput.value   = String(setupCells);
@@ -147,20 +162,20 @@ function syncToggleAccessibility(selector) {
 function renderModeFacts(facts) {
   settingsUI.modeFacts.replaceChildren(...facts.map(fact => {
     const chip = document.createElement('span');
-    chip.className = 'setting-chip';
+    chip.className   = 'setting-chip';
     chip.textContent = fact;
     return chip;
   }));
 }
 
 function syncSettingsUI() {
-  const mode = MODE_PRESETS[activeOptionValue('.opt-mode', 'square')];
-  const grid = GRID_PRESETS[activeOptionValue('.opt-grid', 'medium')];
-  const speed = SPEED_PRESETS[activeOptionValue('.opt-speed', 'normal')];
+  const mode        = MODE_PRESETS[activeOptionValue('.opt-mode', 'square')];
+  const grid        = GRID_PRESETS[activeOptionValue('.opt-grid', 'medium')];
+  const speed       = SPEED_PRESETS[activeOptionValue('.opt-speed', 'normal')];
   const generations = GENERATION_PRESETS[activeOptionValue('.opt-gens', '250')];
-  const timer = TIMER_PRESETS[activeOptionValue('.opt-timer', '0')];
+  const timer       = TIMER_PRESETS[activeOptionValue('.opt-timer', '0')];
   const { setupCells, reinMin, reinMax } = readPlacementInputs();
-  const totalCells = grid.boardWidth * grid.boardHeight;
+  const totalCells  = grid.boardWidth * grid.boardHeight;
 
   settingsUI.modeHelp.textContent = mode.help;
   renderModeFacts(mode.facts);
@@ -174,18 +189,18 @@ function syncSettingsUI() {
   settingsUI.timerHelp.textContent =
     `${timer.help} When the timer expires, both players are force-readied with whatever they have staged.`;
 
-  settingsUI.summaryBlurb.textContent = `${mode.blurb} ${grid.boardNote}`;
-  settingsUI.summaryMode.textContent = mode.label;
-  settingsUI.summaryBoard.textContent = `${grid.summary} (${totalCells} cells)`;
-  settingsUI.summarySetup.textContent = `${setupCells} cells each`;
-  settingsUI.summaryReinforce.textContent = `${reinMin}-${reinMax} cells`;
-  settingsUI.summaryPacing.textContent = `${speed.label}, ${generations.summary}`;
-  settingsUI.summaryTimer.textContent = timer.summary;
-  settingsUI.summaryTip.textContent = mode.tip;
-  settingsUI.startBtn.textContent = `Start ${mode.actionLabel}`;
+  settingsUI.summaryBlurb.textContent      = `${mode.blurb} ${grid.boardNote}`;
+  settingsUI.summaryMode.textContent       = mode.label;
+  settingsUI.summaryBoard.textContent      = `${grid.summary} (${totalCells} cells)`;
+  settingsUI.summarySetup.textContent      = `${setupCells} cells each`;
+  settingsUI.summaryReinforce.textContent  = `${reinMin}-${reinMax} cells`;
+  settingsUI.summaryPacing.textContent     = `${speed.label}, ${generations.summary}`;
+  settingsUI.summaryTimer.textContent      = timer.summary;
+  settingsUI.summaryTip.textContent        = mode.tip;
+  settingsUI.startBtn.textContent          = `Start ${mode.actionLabel}`;
 }
 
-// Toggle-button groups
+// ── Toggle-button groups ──────────────────────────────────────────────────────
 
 function setupToggleGroup(selector) {
   syncToggleAccessibility(selector);
@@ -215,32 +230,48 @@ setupToggleGroup('.opt-timer');
 
 syncSettingsUI();
 
-// Game lifecycle
+// ── Local / Online tab toggle ─────────────────────────────────────────────────
 
-let activeController = null;
+const localAside  = document.getElementById('local-aside');
+const onlineAside = document.getElementById('online-aside');
 
-function startGame(settings, mode = 'square') {
-  if (activeController) activeController.detach();
+document.getElementById('tab-local').addEventListener('click', () => {
+  document.getElementById('tab-local').classList.add('active');
+  document.getElementById('tab-online').classList.remove('active');
+  localAside.style.display  = '';
+  onlineAside.style.display = 'none';
+});
 
-  const match        = new Match(settings);
-  const engine       = mode === 'hex' ? new HexCompetitiveLifeRuleEngine()
-                                      : new CompetitiveLifeRuleEngine();
-  const region       = new HalfBoardPlacementRegionPolicy();
-  const validator    = new StandardPlacementValidator();
-  const winEval      = new StandardWinConditionEvaluator();
-  const statsService = new BoardStatisticsService();
-  const subs         = new PlacementSubmissionService();
+document.getElementById('tab-online').addEventListener('click', () => {
+  document.getElementById('tab-online').classList.add('active');
+  document.getElementById('tab-local').classList.remove('active');
+  localAside.style.display  = 'none';
+  onlineAside.style.display = '';
+});
 
-  const coord = new MatchFlowCoordinator(
-    match, subs, validator, engine, winEval, statsService, region
-  );
+// ── Online lobby sub-tabs (Create / Join) ─────────────────────────────────────
 
-  const canvas   = document.getElementById('game-canvas');
-  const renderer = mode === 'hex' ? new HexGameRenderer(canvas, settings)
-                                  : new GameRenderer(canvas, settings);
-  const ctrl     = new LocalMatchController(coord, renderer, settings);
+const createPanel = document.getElementById('create-panel');
+const joinPanel   = document.getElementById('join-panel');
 
-  ctrl.attach(canvas, {
+document.getElementById('lobby-create-tab').addEventListener('click', () => {
+  document.getElementById('lobby-create-tab').classList.add('active');
+  document.getElementById('lobby-join-tab').classList.remove('active');
+  createPanel.style.display = '';
+  joinPanel.style.display   = 'none';
+});
+
+document.getElementById('lobby-join-tab').addEventListener('click', () => {
+  document.getElementById('lobby-join-tab').classList.add('active');
+  document.getElementById('lobby-create-tab').classList.remove('active');
+  joinPanel.style.display   = '';
+  createPanel.style.display = 'none';
+});
+
+// ── Shared game UI map ────────────────────────────────────────────────────────
+
+function buildGameUI() {
+  return {
     genCounter:   document.getElementById('gen-counter'),
     phaseLabel:   document.getElementById('phase-label'),
     timer:        document.getElementById('timer'),
@@ -265,8 +296,35 @@ function startGame(settings, mode = 'square') {
     bluePatterns: document.getElementById('blue-patterns'),
     blueSpark:    document.getElementById('blue-spark'),
     newGame:      document.getElementById('new-game'),
-  });
+  };
+}
 
+// ── Game lifecycle ────────────────────────────────────────────────────────────
+
+let activeController = null;
+
+function startGame(settings, mode = 'square') {
+  if (activeController) activeController.detach();
+
+  const match        = new Match(settings);
+  const engine       = mode === 'hex' ? new HexCompetitiveLifeRuleEngine()
+                                      : new CompetitiveLifeRuleEngine();
+  const region       = new HalfBoardPlacementRegionPolicy();
+  const validator    = new StandardPlacementValidator();
+  const winEval      = new StandardWinConditionEvaluator();
+  const statsService = new BoardStatisticsService();
+  const subs         = new PlacementSubmissionService();
+
+  const coord = new MatchFlowCoordinator(
+    match, subs, validator, engine, winEval, statsService, region
+  );
+
+  const canvas   = document.getElementById('game-canvas');
+  const renderer = mode === 'hex' ? new HexGameRenderer(canvas, settings)
+                                  : new GameRenderer(canvas, settings);
+  const ctrl     = new LocalMatchController(coord, renderer, settings);
+
+  ctrl.attach(canvas, buildGameUI());
   ctrl.onNewGame(() => {
     if (activeController) activeController.detach();
     showSettings();
@@ -275,10 +333,104 @@ function startGame(settings, mode = 'square') {
   activeController = ctrl;
 }
 
-// Start button
-
+// Start button (local)
 settingsUI.startBtn.addEventListener('click', () => {
   const mode = activeOptionValue('.opt-mode', 'square');
   showGame();
   startGame(readSettings(), mode);
+});
+
+// ── Online ────────────────────────────────────────────────────────────────────
+
+let socket = null;
+
+function getSocket() {
+  if (!socket) {
+    const origin = (window.location.hostname === 'localhost' ||
+                    window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:8080'
+      : window.location.origin;
+    socket = io(origin);  // io is the global from the socket.io CDN script
+  }
+  return socket;
+}
+
+function startOnlineGame(sock, color, settingsData, mode) {
+  if (activeController) activeController.detach();
+
+  const settings = new GameSettings(settingsData);
+  const canvas   = document.getElementById('game-canvas');
+  const renderer = mode === 'hex' ? new HexGameRenderer(canvas, settings)
+                                  : new GameRenderer(canvas, settings);
+  const ctrl     = new OnlineMatchController(sock, color, renderer, settings);
+
+  ctrl.attach(canvas, buildGameUI());
+  ctrl.onNewGame(() => {
+    if (activeController) activeController.detach();
+    if (socket) { socket.disconnect(); socket = null; }
+    // Reset lobby UI
+    document.getElementById('room-code-box').style.display = 'none';
+    document.getElementById('room-code-box').textContent   = '——';
+    document.getElementById('create-status').textContent   = '';
+    document.getElementById('join-status').textContent     = '';
+    document.getElementById('join-code-input').value       = '';
+    document.getElementById('create-confirm-btn').disabled = false;
+    document.getElementById('join-confirm-btn').disabled   = false;
+    showSettings();
+  });
+
+  activeController = ctrl;
+  showGame();
+}
+
+// Create room
+document.getElementById('create-confirm-btn').addEventListener('click', () => {
+  const btn  = document.getElementById('create-confirm-btn');
+  const sock = getSocket();
+  const mode = activeOptionValue('.opt-mode', 'square');
+
+  btn.disabled = true;
+  document.getElementById('create-status').textContent = 'Creating room…';
+
+  // Register handlers before emitting.
+  sock.once('roomCreated', ({ code }) => {
+    const box = document.getElementById('room-code-box');
+    box.textContent   = code;
+    box.style.display = 'block';
+    document.getElementById('create-status').textContent = 'Waiting for opponent to join…';
+  });
+
+  sock.once('gameStart', ({ color, settings: serverSettings, mode: serverMode }) => {
+    startOnlineGame(sock, color, serverSettings, serverMode);
+  });
+
+  sock.emit('createRoom', { settings: settingsToPlain(readSettings()), mode });
+});
+
+// Join room
+document.getElementById('join-confirm-btn').addEventListener('click', () => {
+  const btn    = document.getElementById('join-confirm-btn');
+  const input  = document.getElementById('join-code-input');
+  const status = document.getElementById('join-status');
+  const code   = input.value.trim().toUpperCase();
+
+  if (code.length !== 6) {
+    status.textContent = 'Please enter the full 6-character code.';
+    return;
+  }
+
+  const sock = getSocket();
+  btn.disabled = true;
+  status.textContent = 'Joining…';
+
+  sock.once('joinError', (msg) => {
+    status.textContent = msg;
+    btn.disabled = false;
+  });
+
+  sock.once('gameStart', ({ color, settings: serverSettings, mode: serverMode }) => {
+    startOnlineGame(sock, color, serverSettings, serverMode);
+  });
+
+  sock.emit('joinRoom', { code });
 });

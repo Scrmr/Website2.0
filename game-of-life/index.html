@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Two-Player Life — IgnasZ</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
 
@@ -304,6 +305,68 @@
       transform: translateY(-1px);
     }
 
+    /* ── Mode tabs ── */
+    .mode-tab-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+    .mode-tab {
+      padding: 9px 22px;
+      background: #0d0d0d;
+      border: 1px solid #222;
+      border-radius: 999px;
+      color: #666;
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+    }
+    .mode-tab:hover  { border-color: #3a3a3a; color: #ccc; }
+    .mode-tab.active { border-color: #5a5a5a; background: #161616; color: #f0f0f0; }
+
+    /* ── Online lobby (inside the aside) ── */
+    .lobby-sub {
+      margin-top: 16px;
+    }
+    .room-code-box {
+      display: none;
+      margin-top: 14px;
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      color: #f0f0f0;
+      background: #0d0d0d;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 18px 0;
+    }
+    .lobby-status {
+      margin: 10px 0 0;
+      text-align: center;
+      font-size: 0.82rem;
+      color: #666;
+      min-height: 1.2em;
+    }
+    .code-input {
+      width: 100%;
+      padding: 13px;
+      background: #0f0f0f;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      color: #ececec;
+      font-family: inherit;
+      font-size: 1.3rem;
+      text-align: center;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .code-input::placeholder { color: #333; letter-spacing: 0.1em; }
+    .code-input:focus { outline: none; border-color: #5a5a5a; }
+
     @media (max-width: 860px) {
       .settings-layout {
         grid-template-columns: 1fr;
@@ -581,11 +644,16 @@
 <div id="settings-screen">
   <section class="settings-hero">
     <div>
-      <p class="settings-eyebrow">Local versus match setup</p>
+      <p class="settings-eyebrow">Match setup</p>
       <h1 class="settings-title">Two-Player Life</h1>
       <p class="settings-lead">Choose the board, pace, and placement budget before the duel begins. The panel on the right keeps a live summary so you can see what kind of match you are creating.</p>
     </div>
   </section>
+
+  <div class="mode-tab-row">
+    <button id="tab-local"  class="mode-tab active">Local Match</button>
+    <button id="tab-online" class="mode-tab">Online Match</button>
+  </div>
 
   <div class="settings-layout">
     <div class="settings-main">
@@ -738,7 +806,9 @@
     </div>
 
     <aside class="settings-aside">
-      <section class="settings-card summary-card">
+
+      <!-- Local aside: match snapshot + start button -->
+      <section id="local-aside" class="settings-card summary-card">
         <span class="setting-label">Match snapshot</span>
         <h2 class="summary-title">Ready to launch</h2>
         <p id="summary-blurb" class="summary-copy"></p>
@@ -755,6 +825,43 @@
         <div id="summary-tip" class="summary-tip"></div>
         <button id="start-btn" class="btn-start">Start Game</button>
       </section>
+
+      <!-- Online aside: create / join lobby -->
+      <section id="online-aside" class="settings-card" style="display:none">
+        <span class="setting-label">Online match</span>
+        <h2 class="summary-title">Play against a friend</h2>
+        <p class="summary-copy" style="margin-top:8px">
+          The host's settings apply to both players. Share the code once the room is created.
+        </p>
+
+        <div class="toggle-row mode-row" style="margin-top:18px">
+          <button type="button" class="btn-opt opt-lobby active" id="lobby-create-tab" data-val="create">
+            <span class="btn-opt-title">Create Game</span>
+            <span class="btn-opt-meta">Host a new room</span>
+          </button>
+          <button type="button" class="btn-opt opt-lobby" id="lobby-join-tab" data-val="join">
+            <span class="btn-opt-title">Join Game</span>
+            <span class="btn-opt-meta">Enter a room code</span>
+          </button>
+        </div>
+
+        <!-- Create sub-panel -->
+        <div id="create-panel" class="lobby-sub">
+          <button id="create-confirm-btn" class="btn-start">Create Room</button>
+          <div id="room-code-box" class="room-code-box">——</div>
+          <p id="create-status" class="lobby-status"></p>
+        </div>
+
+        <!-- Join sub-panel -->
+        <div id="join-panel" class="lobby-sub" style="display:none">
+          <input id="join-code-input" type="text" maxlength="6"
+            placeholder="XXXXXX" class="code-input"
+            autocomplete="off" spellcheck="false">
+          <button id="join-confirm-btn" class="btn-start">Join Room</button>
+          <p id="join-status" class="lobby-status"></p>
+        </div>
+      </section>
+
     </aside>
   </div>
 

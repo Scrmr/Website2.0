@@ -1,18 +1,32 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const OpenAI = require('openai');
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import OpenAI from 'openai';
+import { createRoomManager } from './game-of-life/server-rooms.js';
 
-const app = express();
+const app        = express();
+const httpServer = createServer(app);
 
-app.use(cors({
-  origin: ['https://ignasz.uk', 'https://poemgenerator-492211.appspot.com', 'http://localhost:8080', 'http://127.0.0.1:5500', null],
-}));
+const ALLOWED_ORIGINS = [
+  'https://ignasz.uk',
+  'https://poemgenerator-492211.appspot.com',
+  'http://localhost:8080',
+  'http://127.0.0.1:5500',
+];
+
+const io = new Server(httpServer, {
+  cors: { origin: ALLOWED_ORIGINS, methods: ['GET', 'POST'] },
+});
+
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Mirrors the tokenisation used in the frontend so indices line up correctly.
+// ── Poem tokeniser (mirrors frontend so indices line up) ──────────────────────
+
 function tokenise(poem) {
   return poem.match(/[\w'']+|[.,!?;"]/g) || [];
 }
@@ -20,16 +34,14 @@ function tokenise(poem) {
 function pickEncryptedIndices(tokens) {
   const candidates = [];
   tokens.forEach((token, i) => {
-    if (/^[\w'']+$/.test(token) && token.length > 3) {
-      candidates.push(i);
-    }
+    if (/^[\w'']+$/.test(token) && token.length > 3) candidates.push(i);
   });
-
-  // Shuffle candidates and take roughly 25%, minimum 3, maximum 10.
   const shuffled = candidates.sort(() => Math.random() - 0.5);
-  const count = Math.min(Math.max(Math.floor(candidates.length * 0.25), 3), 10);
+  const count    = Math.min(Math.max(Math.floor(candidates.length * 0.25), 3), 10);
   return shuffled.slice(0, count).sort((a, b) => a - b);
 }
+
+// ── HTTP routes ───────────────────────────────────────────────────────────────
 
 app.get('/', (_req, res) => {
   res.json({ status: 'ok', message: 'cypherpoem server is running' });
@@ -56,8 +68,8 @@ app.post('/generate-poem', async (req, res) => {
       temperature: 0.9,
     });
 
-    const poem = completion.choices[0].message.content.trim();
-    const tokens = tokenise(poem);
+    const poem                = completion.choices[0].message.content.trim();
+    const tokens              = tokenise(poem);
     const encryptedWordIndices = pickEncryptedIndices(tokens);
 
     res.json({ poem, encryptedWordIndices });
@@ -91,7 +103,7 @@ app.post('/api/generatePhrases', async (req, res) => {
       response_format: { type: 'json_object' },
     });
 
-    const parsed = JSON.parse(completion.choices[0].message.content);
+    const parsed  = JSON.parse(completion.choices[0].message.content);
     const phrases = parsed.phrases;
 
     if (!Array.isArray(phrases) || phrases.length < 3) {
@@ -105,5 +117,68 @@ app.post('/api/generatePhrases', async (req, res) => {
   }
 });
 
+// ── Socket.io — Game of Life rooms ────────────────────────────────────────────
+
+const rooms = createRoomManager();
+
+io.on('connection', (socket) => {
+
+  socket.on('createRoom', ({ settings, mode }) => {
+    const { code, color } = rooms.createRoom(socket.id, settings, mode);
+    socket.join(code);
+    socket.emit('roomCreated', { code, color });
+  });
+
+  socket.on('joinRoom', ({ code }) => {
+    const result = rooms.joinRoom(socket.id, code);
+    if (result.error) { socket.emit('joinError', result.error); return; }
+
+    socket.join(result.code);
+    const room = rooms.getRoom(result.code);
+
+    // Wire the coordinator's update hook to broadcast state to both players.
+    room.coord.onUpdate(() => {
+      io.to(result.code).emit('stateUpdate', rooms.getState(room));
+    });
+
+    // Tell each player their assigned colour and the authoritative settings.
+    const payload = { settings: { ...room.coord.match.settings }, mode: room.mode };
+    io.to(room.players.red).emit('gameStart', { ...payload, color: 'red' });
+    socket.emit('gameStart', { ...payload, color: 'blue' });
+
+    // Send the initial board state.
+    io.to(result.code).emit('stateUpdate', rooms.getState(room));
+  });
+
+  socket.on('updateDraft', (positions) => {
+    // onUpdate fires inside updateDraft, broadcasting stateUpdate automatically.
+    rooms.updateDraft(socket.id, positions);
+  });
+
+  socket.on('setReady', ({ force } = {}) => {
+    const result = rooms.setReady(socket.id, force ?? false);
+    if (!result) return;
+    if (!result.result.success) {
+      socket.emit('validationError', result.result.errors.join('\n'));
+    }
+    // stateUpdate emitted via onUpdate inside coord.setReady.
+  });
+
+  socket.on('cancelReady', () => {
+    // onUpdate fires inside cancelReady.
+    rooms.cancelReady(socket.id);
+  });
+
+  socket.on('disconnect', () => {
+    const result = rooms.disconnect(socket.id);
+    if (!result) return;
+    const otherColor    = result.disconnectedColor === 'red' ? 'blue' : 'red';
+    const otherSocketId = result.room.players[otherColor];
+    if (otherSocketId) io.to(otherSocketId).emit('opponentLeft');
+  });
+});
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+httpServer.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
