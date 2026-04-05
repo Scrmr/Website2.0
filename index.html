@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IgnasZ</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Non-render-blocking font load -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"></noscript>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
 
@@ -18,85 +22,95 @@
 
     /* ── Header ── */
     header {
-      padding: 60px 24px 40px;
+      padding: 52px 24px 40px;
       text-align: center;
-      max-width: 560px;
+    }
+    .monogram {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.22);
+      margin-bottom: 28px;
+    }
+    .header-rule {
+      width: 48px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
       margin: 0 auto;
-    }
-    header img {
-      width: 96px;
-      height: 96px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 20px;
-      border: 2px solid #222;
-    }
-    header h1 {
-      font-size: 1.9rem;
-      font-weight: 700;
-      margin: 0 0 14px;
-      letter-spacing: -0.5px;
-    }
-    header p {
-      font-size: 0.92rem;
-      color: #777;
-      line-height: 1.75;
-      margin: 0;
     }
 
     /* ── Projects section ── */
     main {
-      max-width: 860px;
+      max-width: 960px;
       margin: 0 auto;
-      padding: 0 20px 80px;
+      padding: 48px 24px 80px;
     }
     .section-label {
       font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 2.5px;
-      color: #444;
-      margin: 0 0 18px;
+      color: #555;
+      margin: 0 0 20px;
     }
     .projects {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
     }
 
     /* ── Card ── */
     .card {
       background: #111;
       border: 1px solid #1c1c1c;
+      border-top: 1px solid rgba(255,255,255,0.07);
       border-radius: 12px;
-      padding: 22px 20px;
+      padding: 28px 24px;
       text-decoration: none;
       color: inherit;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      transition: border-color 0.2s, transform 0.15s;
+      gap: 14px;
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-left: 2px solid transparent;
+      border-radius: 12px;
+      transition: border-color 0.2s;
+      pointer-events: none;
     }
     .card:hover {
-      border-color: #383838;
-      transform: translateY(-3px);
+      border-color: #2c2c2c;
+      border-top-color: rgba(255,255,255,0.13);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    }
+    .card:hover::before {
+      border-left-color: rgba(255,255,255,0.12);
     }
     .card-icon {
-      width: 44px;
-      height: 44px;
+      width: 72px;
+      height: 72px;
       object-fit: contain;
-      border-radius: 8px;
+      border-radius: 10px;
     }
     .card h3 {
       margin: 0;
-      font-size: 0.95rem;
+      font-size: 1.05rem;
       font-weight: 600;
       color: #e0e0e0;
     }
     .card p {
       margin: 0;
-      font-size: 0.82rem;
+      font-size: 0.84rem;
       color: #5a5a5a;
-      line-height: 1.55;
+      line-height: 1.6;
     }
 
     /* ── Footer ── */
@@ -105,26 +119,23 @@
       padding: 20px;
       color: #2a2a2a;
       font-size: 0.78rem;
+      border-top: 1px solid rgba(255,255,255,0.04);
     }
 
     /* ── Mobile ── */
     @media (max-width: 480px) {
-      header { padding: 40px 20px 28px; }
-      header h1 { font-size: 1.5rem; }
+      header { padding: 36px 20px 28px; }
       .projects { grid-template-columns: 1fr 1fr; }
+      .card { padding: 20px 16px; }
+      .card-icon { width: 52px; height: 52px; }
     }
   </style>
 </head>
 <body>
 
   <header>
-    <img src="images/me.jpg" alt="Ignas">
-    <h1>IgnasZ</h1>
-    <p>
-      I use this site to record what I learn in my spare time — mostly philosophy, AI,
-      and information technology. Projects here are small experiments; if something
-      doesn't work, I'm probably still building it.
-    </p>
+    <span class="monogram">IZ</span>
+    <div class="header-rule"></div>
   </header>
 
   <main>
