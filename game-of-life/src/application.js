@@ -1,4 +1,4 @@
-import { PlayerColor, MatchPhase, MatchResultType } from './domain.js';
+import { CellState, PlayerColor, MatchPhase, MatchResultType, Position } from './domain.js';
 
 // ── PlacementSubmissionService ────────────────────────────────────────────────
 
@@ -199,35 +199,77 @@ export class MatchFlowCoordinator {
   }
 
   async _runSimulation() {
-    const { simulationBlockSize, simulationStepMs } = this._match.settings;
+    const { simulationBlockSize, simulationStepMs, continuousMode } = this._match.settings;
 
-    for (let i = 0; i < simulationBlockSize; i++) {
-      await new Promise(r => setTimeout(r, simulationStepMs));
+    // In continuous mode we loop indefinitely; non-continuous exits after one block.
+    while (true) {
+      for (let i = 0; i < simulationBlockSize; i++) {
+        await new Promise(r => setTimeout(r, simulationStepMs));
+        if (this._disposed) return;
+        this._match.board = this._engine.computeNextGeneration(this._match.board);
+        this._match.totalGenerations++;
+        this._emit();
+      }
+
       if (this._disposed) return;
-      this._match.board = this._engine.computeNextGeneration(this._match.board);
-      this._match.totalGenerations++;
-      this._emit();
-    }
 
-    if (this._disposed) return;
+      this._recordHistory();
 
-    this._recordHistory();
+      const result = this._winEval.evaluate(
+        this._match.board, this._match.totalGenerations,
+        this._match.settings, this._stats
+      );
 
-    const result = this._winEval.evaluate(
-      this._match.board, this._match.totalGenerations,
-      this._match.settings, this._stats
-    );
+      if (result !== MatchResultType.IN_PROGRESS) {
+        this._match.phase  = MatchPhase.ENDED;
+        this._match.result = result;
+        this._emit();
+        return;
+      }
 
-    if (result !== MatchResultType.IN_PROGRESS) {
-      this._match.phase  = MatchPhase.ENDED;
-      this._match.result = result;
-    } else {
       this._updateCatchupBonus();
       this._match.roundNumber++;
-      this._match.phase = MatchPhase.REINFORCEMENT_PLACEMENT;
-    }
 
+      if (continuousMode) {
+        // Credit banks — players spend them by clicking during simulation.
+        this._creditLiveBanks();
+        this._emit();
+        // Loop continues immediately
+      } else {
+        this._match.phase = MatchPhase.REINFORCEMENT_PLACEMENT;
+        this._emit();
+        return; // yield; user interaction calls _commitAndSimulate → _runSimulation again
+      }
+    }
+  }
+
+  /**
+   * Credit both players' banks at each simulation block boundary (continuous mode).
+   * Players spend the bank by clicking/dragging during simulation.
+   */
+  _creditLiveBanks() {
+    const { reinforcementMinPlacementCount } = this._match.settings;
+    for (const color of [PlayerColor.RED, PlayerColor.BLUE]) {
+      this._banks[color] += reinforcementMinPlacementCount + this._catchupBonus[color];
+    }
+  }
+
+  /**
+   * Place a single cell directly onto the board during simulation (continuous mode).
+   * Decrements the player's bank by 1. Returns true if the placement was accepted.
+   */
+  placeLiveCell(color, pos) {
+    if (this._match.phase !== MatchPhase.SIMULATION) return false;
+    if (!this._match.settings.continuousMode) return false;
+    if (this._banks[color] <= 0) return false;
+    if (!this._match.board.isInBounds(pos)) return false;
+    if (this._match.board.getCell(pos) !== CellState.EMPTY) return false;
+    if (!this._region.canPlace(color, pos, this._match.board, this._match.settings, this._match.roundNumber)) return false;
+
+    this._banks[color]--;
+    this._match.board = this._match.board.withCells([{ pos, state: color }]);
     this._emit();
+    return true;
   }
 
   _emit() {

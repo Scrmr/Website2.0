@@ -87,6 +87,12 @@ export function createRoomManager() {
     return e;
   }
 
+  function placeLiveCell(socketId, row, col) {
+    const e = _entry(socketId);
+    if (!e) return false;
+    return e.room.coord.placeLiveCell(e.color, new Position(row, col));
+  }
+
   function disconnect(socketId) {
     const e = socketToRoom.get(socketId);
     if (!e) return null;
@@ -140,5 +146,5 @@ export function createRoomManager() {
     };
   }
 
-  return { createRoom, joinRoom, getRoom, updateDraft, setReady, cancelReady, disconnect, getState };
+  return { createRoom, joinRoom, getRoom, updateDraft, setReady, cancelReady, placeLiveCell, disconnect, getState };
 }

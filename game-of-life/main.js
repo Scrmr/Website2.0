@@ -69,9 +69,18 @@ const MODE_PRESETS = {
 };
 
 const GRID_PRESETS = {
-  small:  { boardWidth: 30, boardHeight: 18, summary: '30 x 18', boardNote: 'Fast contact and earlier contested pressure.' },
-  medium: { boardWidth: 40, boardHeight: 24, summary: '40 x 24', boardNote: 'Balanced spacing for most matches.' },
-  large:  { boardWidth: 56, boardHeight: 32, summary: '56 x 32', boardNote: 'More expansion room before fronts collide.' },
+  small:  { boardWidth: 30,  boardHeight: 18, summary: '30 x 18',   boardNote: 'Fast contact and earlier contested pressure.' },
+  medium: { boardWidth: 40,  boardHeight: 24, summary: '40 x 24',   boardNote: 'Balanced spacing for most matches.' },
+  large:  { boardWidth: 56,  boardHeight: 32, summary: '56 x 32',   boardNote: 'More expansion room before fronts collide.' },
+  huge:   { boardWidth: 120, boardHeight: 72, summary: '120 x 72',  boardNote: 'Maximum territory — deep positioning and long-range strategies.' },
+};
+
+const PACING_PRESETS = {
+  5:          { blockSize: 5,  continuous: false, summary: 'Every 5 gen',    help: 'Very frequent placement windows. Good for reactive micro-adjustments and fast corrections.' },
+  10:         { blockSize: 10, continuous: false, summary: 'Every 10 gen',   help: 'Default rhythm. Each block gives patterns time to develop before you intervene.' },
+  25:         { blockSize: 25, continuous: false, summary: 'Every 25 gen',   help: 'Longer arcs between pauses. You commit to bigger strategic bets each round.' },
+  50:         { blockSize: 50, continuous: false, summary: 'Every 50 gen',   help: 'Very infrequent windows. Placement quality matters enormously — every cell counts.' },
+  continuous: { blockSize: 25, continuous: true,  summary: 'Continuous',     help: 'No placement pauses. Both players receive cells in their bank every 25 generations and can spend them at any time by clicking or dragging during simulation.' },
 };
 
 const SPEED_PRESETS = {
@@ -95,10 +104,11 @@ const TIMER_PRESETS = {
 };
 
 function readSettings() {
-  const grid  = GRID_PRESETS[activeOptionValue('.opt-grid', 'medium')];
-  const speed = SPEED_PRESETS[activeOptionValue('.opt-speed', 'normal')];
-  const gens  = parseInt(activeOptionValue('.opt-gens', '250'), 10);
-  const timer = parseInt(activeOptionValue('.opt-timer', '0'), 10);
+  const grid   = GRID_PRESETS[activeOptionValue('.opt-grid', 'medium')];
+  const speed  = SPEED_PRESETS[activeOptionValue('.opt-speed', 'normal')];
+  const gens   = parseInt(activeOptionValue('.opt-gens', '250'), 10);
+  const timer  = parseInt(activeOptionValue('.opt-timer', '0'), 10);
+  const pacing = PACING_PRESETS[activeOptionValue('.opt-pacing', '10')];
   const { setupCells, reinMin, reinMax } = readPlacementInputs(true);
 
   return new GameSettings({
@@ -107,9 +117,11 @@ function readSettings() {
     initialPlacementCount:          setupCells,
     reinforcementMinPlacementCount: reinMin,
     reinforcementMaxPlacementCount: reinMax,
+    simulationBlockSize:            pacing.blockSize,
     simulationStepMs:               speed.stepMs,
     maxGenerations:                 gens,
     placementTimerSeconds:          timer,
+    continuousMode:                 pacing.continuous,
   });
 }
 
@@ -126,6 +138,7 @@ function settingsToPlain(settings) {
     contestedZoneWidth:             settings.contestedZoneWidth,
     contestedZoneUnlocksAtRound:    settings.contestedZoneUnlocksAtRound,
     placementTimerSeconds:          settings.placementTimerSeconds,
+    continuousMode:                 settings.continuousMode,
   };
 }
 
@@ -174,6 +187,7 @@ function syncSettingsUI() {
   const speed       = SPEED_PRESETS[activeOptionValue('.opt-speed', 'normal')];
   const generations = GENERATION_PRESETS[activeOptionValue('.opt-gens', '250')];
   const timer       = TIMER_PRESETS[activeOptionValue('.opt-timer', '0')];
+  const pacing      = PACING_PRESETS[activeOptionValue('.opt-pacing', '10')];
   const { setupCells, reinMin, reinMax } = readPlacementInputs();
   const totalCells  = grid.boardWidth * grid.boardHeight;
 
@@ -181,10 +195,11 @@ function syncSettingsUI() {
   renderModeFacts(mode.facts);
 
   settingsUI.pacingHelp.textContent =
-    `${grid.summary} gives you ${totalCells} total cells to fight over. ${grid.boardNote} ${speed.help} If neither player is eliminated by ${generations.label}, the higher live-cell count wins.`;
+    `${grid.summary} gives you ${totalCells} total cells to fight over. ${grid.boardNote} ${speed.help} If neither player is eliminated by ${generations.label}, the higher live-cell count wins. ${pacing.help}`;
 
-  settingsUI.placementHelp.textContent =
-    `Setup requires exactly ${setupCells} cells per player. Reinforcement rounds allow ${reinMin}-${reinMax} cells, and any unused budget banks with a 1-cell storage tax.`;
+  settingsUI.placementHelp.textContent = pacing.continuous
+    ? `Setup requires exactly ${setupCells} cells per player. After that, both players receive ${reinMin} cells in their bank every ${pacing.blockSize} generations. Spend them by clicking or dragging during simulation — no Ready button, no pauses.`
+    : `Setup requires exactly ${setupCells} cells per player. Reinforcement rounds allow ${reinMin}-${reinMax} cells, and any unused budget banks with a 1-cell storage tax.`;
 
   settingsUI.timerHelp.textContent =
     `${timer.help} When the timer expires, both players are force-readied with whatever they have staged.`;
@@ -193,9 +208,9 @@ function syncSettingsUI() {
   settingsUI.summaryMode.textContent       = mode.label;
   settingsUI.summaryBoard.textContent      = `${grid.summary} (${totalCells} cells)`;
   settingsUI.summarySetup.textContent      = `${setupCells} cells each`;
-  settingsUI.summaryReinforce.textContent  = `${reinMin}-${reinMax} cells`;
-  settingsUI.summaryPacing.textContent     = `${speed.label}, ${generations.summary}`;
-  settingsUI.summaryTimer.textContent      = timer.summary;
+  settingsUI.summaryReinforce.textContent  = pacing.continuous ? `${reinMin} cells/drop (auto)` : `${reinMin}-${reinMax} cells`;
+  settingsUI.summaryPacing.textContent     = `${speed.label}, ${generations.summary}, ${pacing.summary}`;
+  settingsUI.summaryTimer.textContent      = pacing.continuous ? 'N/A (continuous)' : timer.summary;
   settingsUI.summaryTip.textContent        = mode.tip;
   settingsUI.startBtn.textContent          = `Start ${mode.actionLabel}`;
 }
@@ -219,6 +234,7 @@ setupToggleGroup('.opt-grid');
 setupToggleGroup('.opt-speed');
 setupToggleGroup('.opt-gens');
 setupToggleGroup('.opt-timer');
+setupToggleGroup('.opt-pacing');
 
 [settingsUI.setupInput, settingsUI.reinMinInput, settingsUI.reinMaxInput].forEach(input => {
   input.addEventListener('input', syncSettingsUI);

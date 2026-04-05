@@ -173,6 +173,11 @@ io.on('connection', (socket) => {
     rooms.cancelReady(socket.id);
   });
 
+  socket.on('placeLiveCell', ({ row, col }) => {
+    // onUpdate fires inside placeLiveCell (via coordinator._emit).
+    rooms.placeLiveCell(socket.id, row, col);
+  });
+
   socket.on('disconnect', () => {
     const result = rooms.disconnect(socket.id);
     if (!result) return;

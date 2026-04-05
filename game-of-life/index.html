@@ -702,15 +702,19 @@
           <div class="toggle-row">
             <button type="button" class="btn-opt opt-grid" data-val="small">
               <span class="btn-opt-title">Small</span>
-              <span class="btn-opt-meta">30 x 18 board for fast clashes</span>
+              <span class="btn-opt-meta">30 x 18 — fast clashes</span>
             </button>
             <button type="button" class="btn-opt opt-grid active" data-val="medium">
               <span class="btn-opt-title">Medium</span>
-              <span class="btn-opt-meta">40 x 24 board for balanced openings</span>
+              <span class="btn-opt-meta">40 x 24 — balanced openings</span>
             </button>
             <button type="button" class="btn-opt opt-grid" data-val="large">
               <span class="btn-opt-title">Large</span>
-              <span class="btn-opt-meta">56 x 32 board with more room to build</span>
+              <span class="btn-opt-meta">56 x 32 — more room to build</span>
+            </button>
+            <button type="button" class="btn-opt opt-grid" data-val="huge">
+              <span class="btn-opt-title">Huge</span>
+              <span class="btn-opt-meta">120 x 72 — deep territory play</span>
             </button>
           </div>
         </div>
@@ -751,6 +755,32 @@
             <button type="button" class="btn-opt opt-gens" data-val="500">
               <span class="btn-opt-title">500 gen</span>
               <span class="btn-opt-meta">Long macro game</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <p class="setting-subtitle">Reinforcement pauses</p>
+          <div class="toggle-row compact">
+            <button type="button" class="btn-opt opt-pacing" data-val="5">
+              <span class="btn-opt-title">Every 5</span>
+              <span class="btn-opt-meta">Frequent input windows</span>
+            </button>
+            <button type="button" class="btn-opt opt-pacing active" data-val="10">
+              <span class="btn-opt-title">Every 10</span>
+              <span class="btn-opt-meta">Default balance</span>
+            </button>
+            <button type="button" class="btn-opt opt-pacing" data-val="25">
+              <span class="btn-opt-title">Every 25</span>
+              <span class="btn-opt-meta">Strategic intervals</span>
+            </button>
+            <button type="button" class="btn-opt opt-pacing" data-val="50">
+              <span class="btn-opt-title">Every 50</span>
+              <span class="btn-opt-meta">Long arcs, rare decisions</span>
+            </button>
+            <button type="button" class="btn-opt opt-pacing" data-val="continuous">
+              <span class="btn-opt-title">Continuous</span>
+              <span class="btn-opt-meta">No pauses — cells auto-placed</span>
             </button>
           </div>
         </div>
@@ -940,9 +970,10 @@
       <p><strong>Setup:</strong> Each player places the set number of cells on their half (Red = left, Blue = right), then presses Ready. Simulation starts when both are ready.</p>
       <p><strong>Drag to place:</strong> Hold and drag across empty cells to stage them all at once. Drag across staged cells to remove them.</p>
       <p><strong>Patterns:</strong> Select a pre-made formation from the buttons in your panel, then click the board to stamp it. Glider and R-pentomino are mirrored for Blue so they face Red.</p>
-      <p><strong>Simulation:</strong> The board evolves automatically for 10 generations. No input allowed during this phase.</p>
+      <p><strong>Simulation:</strong> The board evolves automatically for a configurable number of generations (5 / 10 / 25 / 50). No input is allowed during this phase.</p>
       <p><strong>Reinforcement:</strong> After each block, place 5–max cells. Unused cells are banked with a 1-cell storage tax.</p>
       <p><strong>Banking:</strong> If you save 5 cells this round, you bank 4 (1 tax). Those 4 are added to your budget next round.</p>
+      <p><strong>Continuous mode:</strong> No placement pauses. Every 25 generations, both players receive reinforcement cells in their bank. Click or drag your half at any time during simulation to spend them — no Ready button needed.</p>
       <p><strong>Survival (square):</strong> A cell lives when it has 2–3 same-colour neighbours and at most 3 total neighbours.</p>
       <p><strong>Survival (hex):</strong> A cell lives when it has 2–3 same-colour neighbours and at most 4 total neighbours.</p>
       <p><strong>Birth:</strong> An empty cell with exactly 3 living neighbours is colonised by the majority colour (both modes).</p>

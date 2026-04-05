@@ -123,6 +123,8 @@ export class GameSettings {
     this.contestedZoneUnlocksAtRound    = overrides.contestedZoneUnlocksAtRound    ?? 3;
     // Placement timer (seconds per phase; 0 = disabled).
     this.placementTimerSeconds          = overrides.placementTimerSeconds          ?? 0;
+    // Continuous mode: skip reinforcement placement phases; auto-place cells each block.
+    this.continuousMode                 = overrides.continuousMode                 ?? false;
     Object.freeze(this);
   }
 }

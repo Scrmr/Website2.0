@@ -117,8 +117,10 @@ export class OnlineMatchController {
       this._draft = [];
       this._renderer.setDraft(PlayerColor.RED,  []);
       this._renderer.setDraft(PlayerColor.BLUE, []);
-      this._stamp = { pattern: null, color: null };
-      this._renderer.clearStampPreview();
+      if (!state.settings.continuousMode) {
+        this._stamp = { pattern: null, color: null };
+        this._renderer.clearStampPreview();
+      }
     }
 
     // Push the opponent's latest draft into the renderer for display.
@@ -165,29 +167,47 @@ export class OnlineMatchController {
 
   _onPointerDown(e) {
     if (!this._state) return;
-    const { phase } = this._state;
+    const { phase, settings } = this._state;
+    const isContinuousSim = settings.continuousMode && phase === MatchPhase.SIMULATION;
+
+    if (isContinuousSim) {
+      if (this._stamp.pattern) { this._doLiveStamp(e); } else { this._startLiveDrag(e); }
+      return;
+    }
+
     if (phase !== MatchPhase.SETUP_PLACEMENT && phase !== MatchPhase.REINFORCEMENT_PLACEMENT) return;
     if (this._stamp.pattern) { this._doStamp(e); } else { this._startDrag(e); }
   }
 
   _onPointerMove(e) {
     if (!this._state) return;
-    const pos      = this._getPos(e);
-    const { phase } = this._state;
-    const isPlace  = phase === MatchPhase.SETUP_PLACEMENT ||
-                     phase === MatchPhase.REINFORCEMENT_PLACEMENT;
+    const pos               = this._getPos(e);
+    const { phase, settings } = this._state;
+    const isContinuousSim   = settings.continuousMode && phase === MatchPhase.SIMULATION;
+    const isPlace           = phase === MatchPhase.SETUP_PLACEMENT ||
+                              phase === MatchPhase.REINFORCEMENT_PLACEMENT ||
+                              isContinuousSim;
 
     this._renderer.setHover(pos);
     this._updateCursor(pos, isPlace);
 
     if (isPlace) {
-      if (this._stamp.pattern && pos) {
-        const { valid, invalid } = this._computeStampCells(this._stamp.pattern, pos, this._myColor);
-        this._renderer.setStampPreview(valid, invalid, this._myColor);
-      } else if (this._drag.active && pos) {
-        const mid   = Math.floor(this._state.settings.boardWidth / 2);
-        const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
-        if (color === this._myColor) this._dragProcessCell(pos);
+      if (isContinuousSim) {
+        if (this._stamp.pattern && pos) {
+          const { valid, invalid } = this._computeLiveStampCells(this._stamp.pattern, pos, this._myColor);
+          this._renderer.setStampPreview(valid, invalid, this._myColor);
+        } else if (this._drag.active && pos) {
+          this._liveDragProcessCell(pos);
+        }
+      } else {
+        if (this._stamp.pattern && pos) {
+          const { valid, invalid } = this._computeStampCells(this._stamp.pattern, pos, this._myColor);
+          this._renderer.setStampPreview(valid, invalid, this._myColor);
+        } else if (this._drag.active && pos) {
+          const mid   = Math.floor(settings.boardWidth / 2);
+          const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
+          if (color === this._myColor) this._dragProcessCell(pos);
+        }
       }
     }
 
@@ -251,12 +271,75 @@ export class OnlineMatchController {
     this._emitDraft();
   }
 
+  // ── Live placement (continuous simulation mode) ───────────────────────────
+
+  _startLiveDrag(e) {
+    const pos = this._getPos(e);
+    if (!pos) return;
+    const mid   = Math.floor(this._state.settings.boardWidth / 2);
+    const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
+    if (color !== this._myColor) return;
+    if ((this._state.players[this._myColor].bank ?? 0) <= 0) return;
+
+    this._drag.active    = true;
+    this._drag.mode      = 'add';
+    this._drag.processed = new Set();
+    this._liveDragProcessCell(pos);
+  }
+
+  _liveDragProcessCell(pos) {
+    if (!this._drag.active) return;
+    const key = pos.key();
+    if (this._drag.processed.has(key)) return;
+    this._drag.processed.add(key);
+    const mid   = Math.floor(this._state.settings.boardWidth / 2);
+    const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
+    if (color !== this._myColor) return;
+    this._socket.emit('placeLiveCell', { row: pos.row, col: pos.col });
+  }
+
+  _doLiveStamp(e) {
+    const pos = this._getPos(e);
+    if (!pos) return;
+    const { pattern, color } = this._stamp;
+    if (!color || color !== this._myColor) return;
+    const { valid } = this._computeLiveStampCells(pattern, pos, color);
+    for (const p of valid) {
+      this._socket.emit('placeLiveCell', { row: p.row, col: p.col });
+    }
+    this._doRender();
+  }
+
+  _computeLiveStampCells(pattern, cursor, color) {
+    let cells = [...pattern.cells];
+    if (pattern.mirrorForBlue && color === PlayerColor.BLUE) cells = mirrorH(cells);
+    const centred = centrePattern(cells);
+
+    const board = this._getBoard();
+    const bank  = this._state.players[color].bank ?? 0;
+
+    const valid = [], invalid = [];
+    let validCount = 0;
+
+    for (const [dr, dc] of centred) {
+      const pos = new Position(cursor.row + dr, cursor.col + dc);
+      if (!board.isInBounds(pos)) continue;
+      const ok = board.getCell(pos) === CellState.EMPTY &&
+                 this._isInMyRegion(pos) &&
+                 validCount < bank;
+      if (ok) { valid.push(pos); validCount++; }
+      else    { invalid.push(pos); }
+    }
+    return { valid, invalid };
+  }
+
   // ── Stamp ─────────────────────────────────────────────────────────────────
 
   _toggleStampMode(pattern, color) {
     if (!this._state) return;
-    const { phase } = this._state;
-    if (phase !== MatchPhase.SETUP_PLACEMENT && phase !== MatchPhase.REINFORCEMENT_PLACEMENT) return;
+    const { phase, settings } = this._state;
+    const isContinuousSim = settings.continuousMode && phase === MatchPhase.SIMULATION;
+    if (!isContinuousSim && phase !== MatchPhase.SETUP_PLACEMENT && phase !== MatchPhase.REINFORCEMENT_PLACEMENT) return;
 
     const same = this._stamp.pattern?.id === pattern.id;
     this._stamp = same ? { pattern: null, color: null } : { pattern, color };
@@ -396,13 +479,21 @@ export class OnlineMatchController {
   // ── Cursor ────────────────────────────────────────────────────────────────
 
   _updateCursor(pos, isPlacement) {
-    if (!isPlacement)         { this._canvas.style.cursor = 'default';    return; }
-    if (this._stamp.pattern)  { this._canvas.style.cursor = 'copy';       return; }
-    if (!pos)                 { this._canvas.style.cursor = 'default';    return; }
-    const mid   = Math.floor(this._state.settings.boardWidth / 2);
-    const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
-    if (color !== this._myColor)                                    { this._canvas.style.cursor = 'not-allowed'; return; }
-    if (this._state.players[this._myColor].isReady)                 { this._canvas.style.cursor = 'not-allowed'; return; }
+    if (!isPlacement)        { this._canvas.style.cursor = 'default'; return; }
+    if (this._stamp.pattern) { this._canvas.style.cursor = 'copy';    return; }
+    if (!pos)                { this._canvas.style.cursor = 'default'; return; }
+    const { settings, phase } = this._state;
+    const mid             = Math.floor(settings.boardWidth / 2);
+    const color           = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
+    const isContinuousSim = settings.continuousMode && phase === MatchPhase.SIMULATION;
+    if (isContinuousSim) {
+      if (color !== this._myColor)                                { this._canvas.style.cursor = 'not-allowed'; return; }
+      const hasBank = (this._state.players[this._myColor].bank ?? 0) > 0;
+      this._canvas.style.cursor = hasBank ? 'crosshair' : 'not-allowed';
+      return;
+    }
+    if (color !== this._myColor)                                { this._canvas.style.cursor = 'not-allowed'; return; }
+    if (this._state.players[this._myColor].isReady)             { this._canvas.style.cursor = 'not-allowed'; return; }
     this._canvas.style.cursor = 'crosshair';
   }
 
@@ -501,7 +592,9 @@ export class OnlineMatchController {
         phaseText = `Round 1 · Setup — place ${settings.initialPlacementCount} cells each`;
         break;
       case MatchPhase.SIMULATION:
-        phaseText = `Round ${roundNumber} · Simulating…`;
+        phaseText = settings.continuousMode
+          ? `Round ${roundNumber} · Simulating — click or drag your half to spend bank cells`
+          : `Round ${roundNumber} · Simulating…`;
         break;
       case MatchPhase.REINFORCEMENT_PLACEMENT: {
         const isContest = settings.contestedZoneWidth > 0 &&
@@ -519,9 +612,10 @@ export class OnlineMatchController {
     this._ui.phaseLabel.textContent = phaseText;
 
     // Player panels
-    const isSetup    = phase === MatchPhase.SETUP_PLACEMENT;
-    const simRunning = phase === MatchPhase.SIMULATION;
-    const isPlacement = isSetup || phase === MatchPhase.REINFORCEMENT_PLACEMENT;
+    const isSetup         = phase === MatchPhase.SETUP_PLACEMENT;
+    const simRunning      = phase === MatchPhase.SIMULATION;
+    const isPlacement     = isSetup || phase === MatchPhase.REINFORCEMENT_PLACEMENT;
+    const isContinuousSim = settings.continuousMode && simRunning;
     const { reinforcementMinPlacementCount: minR } = settings;
 
     for (const [color, alive, readyEl, cellsEl, placedEl, bankEl, catchupEl, patternBtns, sparkCanvas] of [
@@ -541,28 +635,37 @@ export class OnlineMatchController {
       const maxBudget = isSetup
         ? settings.initialPlacementCount
         : settings.reinforcementMaxPlacementCount + pData.bank + pData.catchupBonus;
+      const bank      = pData.bank ?? 0;
 
       cellsEl.textContent = `Cells alive: ${alive}`;
 
-      placedEl.textContent = isPlacement
-        ? (isSetup
-            ? `Staged: ${staged} / ${maxBudget}`
-            : `Staged: ${staged} / ${maxBudget}  (min ${minR})`)
-        : '';
+      if (isContinuousSim) {
+        placedEl.textContent = bank > 0
+          ? (isMe ? `Bank: ${bank} — click to place` : `Bank: ${bank}`)
+          : 'Waiting for cells…';
+        bankEl.textContent    = pData.catchupBonus > 0 ? `+${pData.catchupBonus} catch-up` : '';
+        catchupEl.textContent = '';
+      } else if (isPlacement) {
+        placedEl.textContent  = isSetup
+          ? `Staged: ${staged} / ${maxBudget}`
+          : `Staged: ${staged} / ${maxBudget}  (min ${minR})`;
+        bankEl.textContent    = (!isSetup && bank > 0)              ? `Bank +${bank}`                : '';
+        catchupEl.textContent = (!isSetup && pData.catchupBonus > 0) ? `+${pData.catchupBonus} catch-up` : '';
+      } else {
+        placedEl.textContent  = '';
+        bankEl.textContent    = (!isSetup && bank > 0)              ? `Bank +${bank}`                : '';
+        catchupEl.textContent = (!isSetup && pData.catchupBonus > 0) ? `+${pData.catchupBonus} catch-up` : '';
+      }
 
-      bankEl.textContent    = (!isSetup && pData.bank > 0)         ? `Bank +${pData.bank}`            : '';
-      catchupEl.textContent = (!isSetup && pData.catchupBonus > 0) ? `+${pData.catchupBonus} catch-up` : '';
-
-      // Only the local player can press Ready; opponent's button is display-only.
       readyEl.disabled    = !isPlacement || simRunning || !isMe;
-      readyEl.textContent = isReady ? 'Cancel' : 'Ready';
-      readyEl.classList.toggle('btn-ready-active', isReady);
+      readyEl.textContent = isContinuousSim ? '—' : (isReady ? 'Cancel' : 'Ready');
+      readyEl.classList.toggle('btn-ready-active', isReady && !isContinuousSim);
 
-      const showPatterns = isPlacement && !simRunning && isMe;
+      const showPatterns = (isPlacement && !simRunning && isMe) || (isContinuousSim && isMe);
       for (const pattern of PATTERNS) {
         const btn = patternBtns[pattern.id];
         if (!btn) continue;
-        btn.disabled = !showPatterns || isReady;
+        btn.disabled = !showPatterns || (!isContinuousSim && isReady);
         btn.classList.toggle('active',
           this._stamp.pattern?.id === pattern.id && this._stamp.color === color);
       }
