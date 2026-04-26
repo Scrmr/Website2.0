@@ -62,6 +62,7 @@ export class MatchFlowCoordinator {
   isReady(color)      { return this._subs.isReady(color); }
   getDraft(color)     { return this._subs.getSubmission(color); }
   getStats()          { return this._stats.getStatistics(this._match.board); }
+  getEcologyMetrics() { return this._stats.getEcologyMetrics(this._match.board); }
   getRoundNumber()    { return this._match.roundNumber; }
   getBank(color)      { return this._banks[color]; }
   getCatchupBonus(color) { return this._catchupBonus[color]; }

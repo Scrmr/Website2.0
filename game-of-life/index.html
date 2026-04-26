@@ -490,9 +490,9 @@
     .pattern-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 6px;
       margin-top: 6px;
-      max-height: 112px;
+      max-height: 178px;
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: #2a2a2a transparent;
@@ -501,15 +501,18 @@
     .pattern-row::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
     .btn-pattern {
       display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 7px 3px 4px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      min-width: 132px;
+      padding: 6px 8px;
       background: #0e0e0e;
       border: 1px solid #222;
       border-radius: 5px;
       color: #999;
       font-family: inherit;
       font-size: 0.72rem;
+      line-height: 1.2;
       cursor: pointer;
       transition: border-color 0.1s, background 0.1s;
     }
@@ -525,8 +528,24 @@
       font-weight: 600;
       color: #0a0a0a;
     }
+    .pat-main {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      width: 100%;
+      min-width: 0;
+    }
     .pat-name { }
     .pat-cost { color: #555; font-size: 0.68rem; }
+    .pat-role {
+      display: block;
+      max-width: 100%;
+      color: #676767;
+      font-size: 0.68rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
     /* Hint */
     .hint {
@@ -603,6 +622,56 @@
       white-space: nowrap;
     }
 
+    .ecology-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .eco-metric {
+      padding: 8px 9px;
+      background: #101010;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      min-width: 0;
+    }
+    .eco-label {
+      display: block;
+      color: #777;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .eco-value {
+      display: block;
+      color: #e0e0e0;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+    .eco-track {
+      height: 3px;
+      margin-top: 6px;
+      border-radius: 999px;
+      background: #1c1c1c;
+      overflow: hidden;
+    }
+    .eco-fill {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: #8f8f8f;
+      transition: width 0.25s ease;
+    }
+    #eco-stability-bar { background: #6fcf97; }
+    #eco-diversity-bar { background: #56ccf2; }
+    #eco-age-bar { background: #f2c94c; }
+    #eco-volatility-bar { background: #bb6bd9; }
+    #eco-territory-bar { background: #f2994a; }
+
     /* Timer */
     #timer {
       font-size: 0.84rem;
@@ -632,6 +701,7 @@
 
     /* Responsive */
     @media (max-width: 500px) {
+      .ecology-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .panels { grid-template-columns: 1fr; }
       .hint   { display: none; }
     }
@@ -704,7 +774,7 @@
               <span class="btn-opt-title">Small</span>
               <span class="btn-opt-meta">30 x 18 — fast clashes</span>
             </button>
-            <button type="button" class="btn-opt opt-grid active" data-val="medium">
+            <button type="button" class="btn-opt opt-grid" data-val="medium">
               <span class="btn-opt-title">Medium</span>
               <span class="btn-opt-meta">40 x 24 — balanced openings</span>
             </button>
@@ -712,7 +782,7 @@
               <span class="btn-opt-title">Large</span>
               <span class="btn-opt-meta">56 x 32 — more room to build</span>
             </button>
-            <button type="button" class="btn-opt opt-grid" data-val="huge">
+            <button type="button" class="btn-opt opt-grid active" data-val="huge">
               <span class="btn-opt-title">Huge</span>
               <span class="btn-opt-meta">120 x 72 — deep territory play</span>
             </button>
@@ -744,11 +814,15 @@
         <div class="setting-group">
           <p class="setting-subtitle">Match length</p>
           <div class="toggle-row compact">
+            <button type="button" class="btn-opt opt-gens active" data-val="endless">
+              <span class="btn-opt-title">Endless</span>
+              <span class="btn-opt-meta">Defeat or surrender only</span>
+            </button>
             <button type="button" class="btn-opt opt-gens" data-val="100">
               <span class="btn-opt-title">100 gen</span>
               <span class="btn-opt-meta">Quick finish</span>
             </button>
-            <button type="button" class="btn-opt opt-gens active" data-val="250">
+            <button type="button" class="btn-opt opt-gens" data-val="250">
               <span class="btn-opt-title">250 gen</span>
               <span class="btn-opt-meta">Default balance</span>
             </button>
@@ -766,7 +840,7 @@
               <span class="btn-opt-title">Every 5</span>
               <span class="btn-opt-meta">Frequent input windows</span>
             </button>
-            <button type="button" class="btn-opt opt-pacing active" data-val="10">
+            <button type="button" class="btn-opt opt-pacing" data-val="10">
               <span class="btn-opt-title">Every 10</span>
               <span class="btn-opt-meta">Default balance</span>
             </button>
@@ -778,9 +852,9 @@
               <span class="btn-opt-title">Every 50</span>
               <span class="btn-opt-meta">Long arcs, rare decisions</span>
             </button>
-            <button type="button" class="btn-opt opt-pacing" data-val="continuous">
+            <button type="button" class="btn-opt opt-pacing active" data-val="continuous">
               <span class="btn-opt-title">Continuous</span>
-              <span class="btn-opt-meta">No pauses — cells auto-placed</span>
+              <span class="btn-opt-meta">No pauses — live bank spending</span>
             </button>
           </div>
         </div>
@@ -849,9 +923,36 @@
         <h2 class="summary-title">Ready to launch</h2>
         <p id="summary-blurb" class="summary-copy"></p>
 
+        <div class="setting-group">
+          <p class="setting-subtitle">Opponent</p>
+          <div class="toggle-row compact">
+            <button type="button" class="btn-opt opt-opponent active" data-val="normal">
+              <span class="btn-opt-title">Normal</span>
+              <span class="btn-opt-meta">Balanced bot</span>
+            </button>
+            <button type="button" class="btn-opt opt-opponent" data-val="hard">
+              <span class="btn-opt-title">Hard</span>
+              <span class="btn-opt-meta">Sharper pressure</span>
+            </button>
+            <button type="button" class="btn-opt opt-opponent" data-val="strange">
+              <span class="btn-opt-title">Strange</span>
+              <span class="btn-opt-meta">Delayed chaos</span>
+            </button>
+            <button type="button" class="btn-opt opt-opponent" data-val="cruel">
+              <span class="btn-opt-title">Cruel</span>
+              <span class="btn-opt-meta">Targets weakness</span>
+            </button>
+            <button type="button" class="btn-opt opt-opponent" data-val="human">
+              <span class="btn-opt-title">Human</span>
+              <span class="btn-opt-meta">Shared screen</span>
+            </button>
+          </div>
+        </div>
+
         <div class="summary-list">
           <div class="summary-row"><span>Mode</span><strong id="summary-mode"></strong></div>
           <div class="summary-row"><span>Board</span><strong id="summary-board"></strong></div>
+          <div class="summary-row"><span>Opponent</span><strong id="summary-opponent"></strong></div>
           <div class="summary-row"><span>Setup</span><strong id="summary-setup"></strong></div>
           <div class="summary-row"><span>Reinforcement</span><strong id="summary-reinforcement"></strong></div>
           <div class="summary-row"><span>Pacing</span><strong id="summary-pacing"></strong></div>
@@ -920,6 +1021,34 @@
     <div id="dom-blue" class="dom-seg"><span class="dom-pct" id="dom-blue-pct">–</span></div>
   </div>
 
+  <div class="ecology-grid" aria-label="Ecology metrics">
+    <div class="eco-metric">
+      <span class="eco-label">Stability</span>
+      <span id="eco-stability" class="eco-value">0%</span>
+      <span class="eco-track"><span id="eco-stability-bar" class="eco-fill"></span></span>
+    </div>
+    <div class="eco-metric">
+      <span class="eco-label">Diversity</span>
+      <span id="eco-diversity" class="eco-value">0%</span>
+      <span class="eco-track"><span id="eco-diversity-bar" class="eco-fill"></span></span>
+    </div>
+    <div class="eco-metric">
+      <span class="eco-label">Age</span>
+      <span id="eco-age" class="eco-value">0%</span>
+      <span class="eco-track"><span id="eco-age-bar" class="eco-fill"></span></span>
+    </div>
+    <div class="eco-metric">
+      <span class="eco-label">Volatility</span>
+      <span id="eco-volatility" class="eco-value">0%</span>
+      <span class="eco-track"><span id="eco-volatility-bar" class="eco-fill"></span></span>
+    </div>
+    <div class="eco-metric">
+      <span class="eco-label">Territory</span>
+      <span id="eco-territory" class="eco-value">0%</span>
+      <span class="eco-track"><span id="eco-territory-bar" class="eco-fill"></span></span>
+    </div>
+  </div>
+
   <div class="canvas-wrap">
     <canvas id="game-canvas"></canvas>
   </div>
@@ -970,14 +1099,15 @@
       <p><strong>Setup:</strong> Each player places the set number of cells on their half (Red = left, Blue = right), then presses Ready. Simulation starts when both are ready.</p>
       <p><strong>Drag to place:</strong> Hold and drag across empty cells to stage them all at once. Drag across staged cells to remove them.</p>
       <p><strong>Patterns:</strong> Select a pre-made formation from the buttons in your panel, then click the board to stamp it. Glider and R-pentomino are mirrored for Blue so they face Red.</p>
-      <p><strong>Simulation:</strong> The board evolves automatically for a configurable number of generations (5 / 10 / 25 / 50). No input is allowed during this phase.</p>
+      <p><strong>Simulation:</strong> The board evolves automatically. In paused pacing, input waits for reinforcement windows; in continuous pacing, banked cells can be spent while the world keeps moving.</p>
       <p><strong>Reinforcement:</strong> After each block, place 5–max cells. Unused cells are banked with a 1-cell storage tax.</p>
       <p><strong>Banking:</strong> If you save 5 cells this round, you bank 4 (1 tax). Those 4 are added to your budget next round.</p>
-      <p><strong>Continuous mode:</strong> No placement pauses. Every 25 generations, both players receive reinforcement cells in their bank. Click or drag your half at any time during simulation to spend them — no Ready button needed.</p>
+      <p><strong>Continuous mode:</strong> No placement pauses. Every block, both players receive reinforcement cells in their bank. Click or drag your half at any time during simulation to spend them; bot opponents spend their own banks automatically.</p>
+      <p><strong>Ecology:</strong> Stability tracks cells likely to survive, diversity tracks colour balance, age tracks mature lineages, volatility tracks birth/death pressure, and territory tracks the living footprint across the board.</p>
       <p><strong>Survival (square):</strong> A cell lives when it has 2–3 same-colour neighbours and at most 3 total neighbours.</p>
       <p><strong>Survival (hex):</strong> A cell lives when it has 2–3 same-colour neighbours and at most 4 total neighbours.</p>
       <p><strong>Birth:</strong> An empty cell with exactly 3 living neighbours is colonised by the majority colour (both modes).</p>
-      <p><strong>Win:</strong> Eliminate all opponent cells, or have more cells when the generation cap is reached.</p>
+      <p><strong>Win:</strong> Eliminate all opponent cells. Finite matches can also end at the generation cap; endless matches continue until defeat or giving up.</p>
     </div>
   </details>
 

@@ -121,7 +121,8 @@ export class HexGameRenderer {
     const ctx = this._ctx;
     const mid = Math.floor(boardWidth / 2);
     const isPlacement = phase === MatchPhase.SETUP_PLACEMENT ||
-                        phase === MatchPhase.REINFORCEMENT_PLACEMENT;
+                        phase === MatchPhase.REINFORCEMENT_PLACEMENT ||
+                        (this._settings.continuousMode && phase === MatchPhase.SIMULATION);
     const isContested = contestedZoneWidth > 0 && roundNumber >= contestedZoneUnlocksAtRound;
     const halfC  = Math.floor(contestedZoneWidth / 2);
     const cStart = mid - halfC;

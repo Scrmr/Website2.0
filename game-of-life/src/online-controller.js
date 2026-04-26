@@ -1,4 +1,5 @@
 import { CellState, PlayerColor, MatchPhase, MatchResultType, Board, Position, PATTERNS } from './domain.js';
+import { BoardStatisticsService } from './services.js';
 
 // ── Pattern helpers (duplicated from controller.js) ───────────────────────────
 
@@ -33,12 +34,18 @@ export class OnlineMatchController {
     this._state    = null; // last received serialised state
 
     // Local draft for my colour — tracked client-side for immediate feedback.
-    this._draft    = [];
-    this._drag     = { active: false, mode: null, processed: new Set() };
-    this._stamp    = { pattern: null, color: null };
+    this._draft       = [];
+    this._livePending = new Map(); // key → Position: optimistic placements awaiting server confirmation
+    this._drag        = { active: false, mode: null, processed: new Set() };
+    this._stamp       = { pattern: null, color: null };
     this._patternBtns = { [PlayerColor.RED]: {}, [PlayerColor.BLUE]: {} };
 
     this._prevPhase     = null;
+    this._boardCache    = null;
+    this._statsCache    = null; // { red, blue } — built once per stateUpdate
+    this._statsService  = new BoardStatisticsService();
+    this._myTitleEl     = null;
+    this._origTitle     = '';
     this._handlers      = null;
     this._newGameCb     = null;
     this._timerInterval = null;
@@ -57,6 +64,14 @@ export class OnlineMatchController {
   attach(canvas, ui) {
     this._canvas = canvas;
     this._ui     = ui;
+
+    // Mark the player's own panel with a "You" label so they know their colour.
+    const titleSel  = this._myColor === PlayerColor.RED ? '.panel-red .panel-title' : '.panel-blue .panel-title';
+    this._myTitleEl = document.querySelector(titleSel);
+    if (this._myTitleEl) {
+      this._origTitle = this._myTitleEl.textContent;
+      this._myTitleEl.textContent += ' · You';
+    }
 
     this._socket.on('stateUpdate',     this._onStateUpdate);
     this._socket.on('validationError', this._onValidationError);
@@ -88,6 +103,10 @@ export class OnlineMatchController {
 
   detach() {
     if (!this._canvas || !this._handlers) return;
+    if (this._myTitleEl) {
+      this._myTitleEl.textContent = this._origTitle;
+      this._myTitleEl = null;
+    }
     this._canvas.removeEventListener('pointermove',  this._handlers.pointermove);
     this._canvas.removeEventListener('pointerleave', this._handlers.pointerleave);
     this._canvas.removeEventListener('pointerdown',  this._handlers.pointerdown);
@@ -105,6 +124,18 @@ export class OnlineMatchController {
     const prevPhase = this._state?.phase;
     this._state     = state;
 
+    // Rebuild board and stats once per server tick so pointer-move renders are free.
+    const { width, height, cells, ages } = state.board;
+    this._boardCache = new Board(width, height, cells, ages);
+    let redCount = 0, blueCount = 0;
+    for (let r = 0; r < height; r++)
+      for (let c = 0; c < width; c++) {
+        const s = cells[r][c];
+        if      (s === CellState.RED)  redCount++;
+        else if (s === CellState.BLUE) blueCount++;
+      }
+    this._statsCache = { red: redCount, blue: blueCount };
+
     const isPlacement  = state.phase === MatchPhase.SETUP_PLACEMENT ||
                          state.phase === MatchPhase.REINFORCEMENT_PLACEMENT;
     const wasPlacement = prevPhase   === MatchPhase.SETUP_PLACEMENT ||
@@ -115,6 +146,7 @@ export class OnlineMatchController {
     if (state.phase === MatchPhase.SIMULATION && prevPhase !== MatchPhase.SIMULATION) {
       this._stopTimer();
       this._draft = [];
+      this._livePending.clear();
       this._renderer.setDraft(PlayerColor.RED,  []);
       this._renderer.setDraft(PlayerColor.BLUE, []);
       if (!state.settings.continuousMode) {
@@ -127,6 +159,16 @@ export class OnlineMatchController {
     const opp     = this._myColor === PlayerColor.RED ? PlayerColor.BLUE : PlayerColor.RED;
     const oppDraft = state.players[opp].draft.map(p => new Position(p.row, p.col));
     this._renderer.setDraft(opp, oppDraft);
+
+    // Prune pending live cells that the server has now confirmed (cell is no longer empty).
+    if (this._livePending.size > 0) {
+      for (const [key, pos] of this._livePending) {
+        if (state.board.cells[pos.row]?.[pos.col] !== CellState.EMPTY) {
+          this._livePending.delete(key);
+        }
+      }
+      this._renderer.setDraft(this._myColor, [...this._livePending.values()]);
+    }
 
     this._doRender();
   }
@@ -145,10 +187,12 @@ export class OnlineMatchController {
       const btn = document.createElement('button');
       btn.className = 'btn-pattern';
       btn.title     = `${pattern.name} (${pattern.cells.length} cells) — ${pattern.desc}`;
+      const role = pattern.role ?? pattern.tag;
       btn.innerHTML =
-        `<span class="pat-tag" style="background:${pattern.tagColor}">${pattern.tag}</span>` +
+        `<span class="pat-main"><span class="pat-tag" style="background:${pattern.tagColor}">${pattern.tag}</span>` +
         `<span class="pat-name">${pattern.name}</span>` +
-        `<span class="pat-cost">${pattern.cells.length}c</span>`;
+        `<span class="pat-cost">${pattern.cells.length}c</span></span>` +
+        `<span class="pat-role">${role}</span>`;
       btn.addEventListener('click', () => {
         if (color === this._myColor) this._toggleStampMode(pattern, color);
       });
@@ -295,6 +339,11 @@ export class OnlineMatchController {
     const mid   = Math.floor(this._state.settings.boardWidth / 2);
     const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
     if (color !== this._myColor) return;
+    // Optimistic update: show the cell immediately without waiting for the server round-trip.
+    if (!this._livePending.has(key) && this._getBoard().getCell(pos) === CellState.EMPTY) {
+      this._livePending.set(key, pos);
+      this._renderer.setDraft(this._myColor, [...this._livePending.values()]);
+    }
     this._socket.emit('placeLiveCell', { row: pos.row, col: pos.col });
   }
 
@@ -304,9 +353,13 @@ export class OnlineMatchController {
     const { pattern, color } = this._stamp;
     if (!color || color !== this._myColor) return;
     const { valid } = this._computeLiveStampCells(pattern, pos, color);
+    let drafted = false;
     for (const p of valid) {
+      const k = p.key();
+      if (!this._livePending.has(k)) { this._livePending.set(k, p); drafted = true; }
       this._socket.emit('placeLiveCell', { row: p.row, col: p.col });
     }
+    if (drafted) this._renderer.setDraft(this._myColor, [...this._livePending.values()]);
     this._doRender();
   }
 
@@ -316,7 +369,7 @@ export class OnlineMatchController {
     const centred = centrePattern(cells);
 
     const board = this._getBoard();
-    const bank  = this._state.players[color].bank ?? 0;
+    const bank  = (this._state.players[color].bank ?? 0) - this._livePending.size;
 
     const valid = [], invalid = [];
     let validCount = 0;
@@ -325,6 +378,7 @@ export class OnlineMatchController {
       const pos = new Position(cursor.row + dr, cursor.col + dc);
       if (!board.isInBounds(pos)) continue;
       const ok = board.getCell(pos) === CellState.EMPTY &&
+                 !this._livePending.has(pos.key()) &&
                  this._isInMyRegion(pos) &&
                  validCount < bank;
       if (ok) { valid.push(pos); validCount++; }
@@ -449,10 +503,7 @@ export class OnlineMatchController {
     this._socket.emit('updateDraft', this._draft.map(p => ({ row: p.row, col: p.col })));
   }
 
-  _getBoard() {
-    const { width, height, cells, ages } = this._state.board;
-    return new Board(width, height, cells, ages);
-  }
+  _getBoard() { return this._boardCache; }
 
   _getMaxPlaceable() {
     if (!this._state) return 0;
@@ -556,6 +607,22 @@ export class OnlineMatchController {
 
   // ── Main render ───────────────────────────────────────────────────────────
 
+  _renderEcology(metrics) {
+    const pairs = [
+      [metrics.stability, this._ui.ecoStability, this._ui.ecoStabilityBar],
+      [metrics.diversity, this._ui.ecoDiversity, this._ui.ecoDiversityBar],
+      [metrics.age, this._ui.ecoAge, this._ui.ecoAgeBar],
+      [metrics.volatility, this._ui.ecoVolatility, this._ui.ecoVolatilityBar],
+      [metrics.territory, this._ui.ecoTerritory, this._ui.ecoTerritoryBar],
+    ];
+
+    for (const [value, label, bar] of pairs) {
+      const pct = Math.max(0, Math.min(100, value ?? 0));
+      if (label) label.textContent = `${pct}%`;
+      if (bar) bar.style.width = `${pct}%`;
+    }
+  }
+
   _doRender() {
     if (!this._state) return;
 
@@ -565,15 +632,8 @@ export class OnlineMatchController {
     this._renderer.setReadyStates(players.red.isReady, players.blue.isReady);
     this._renderer.render(board, phase, roundNumber);
 
-    // Cell counts
-    let red = 0, blue = 0;
-    for (let r = 0; r < board.height; r++) {
-      for (let c = 0; c < board.width; c++) {
-        const s = board.getCellAt(r, c);
-        if      (s === CellState.RED)  red++;
-        else if (s === CellState.BLUE) blue++;
-      }
-    }
+    // Cell counts (pre-computed in _handleStateUpdate — free on pointer-move renders)
+    const { red, blue } = this._statsCache;
     const total = red + blue;
 
     // Dominance bar
@@ -582,9 +642,12 @@ export class OnlineMatchController {
     if (this._ui.domBlue)    this._ui.domBlue.style.width    = (100 - redPct) + '%';
     if (this._ui.domRedPct)  this._ui.domRedPct.textContent  = total > 0 ? redPct + '%'         : '–';
     if (this._ui.domBluePct) this._ui.domBluePct.textContent = total > 0 ? (100 - redPct) + '%' : '–';
+    this._renderEcology(this._statsService.getEcologyMetrics(board));
 
     // Status bar
-    this._ui.genCounter.textContent = `Gen ${totalGenerations} / ${settings.maxGenerations}`;
+    this._ui.genCounter.textContent = settings.maxGenerations > 0
+      ? `Gen ${totalGenerations} / ${settings.maxGenerations}`
+      : `Gen ${totalGenerations} / endless`;
 
     let phaseText = '';
     switch (phase) {
@@ -673,6 +736,7 @@ export class OnlineMatchController {
       this._drawSparkline(sparkCanvas, pData.history, color);
     }
 
-    this._ui.newGame.style.display = phase === MatchPhase.ENDED ? 'inline-block' : 'none';
+    this._ui.newGame.textContent = phase === MatchPhase.ENDED ? 'Back to Settings' : 'Give Up';
+    this._ui.newGame.style.display = 'inline-block';
   }
 }

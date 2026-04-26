@@ -1,4 +1,5 @@
 import { CellState, PlayerColor, MatchPhase, MatchResultType, Position, PATTERNS } from './domain.js';
+import { LocalBotOpponent } from './bot.js';
 
 // ── Pattern helpers ───────────────────────────────────────────────────────────
 
@@ -19,10 +20,11 @@ function centrePattern(cells) {
 // ── LocalMatchController ──────────────────────────────────────────────────────
 
 export class LocalMatchController {
-  constructor(coordinator, renderer, settings) {
+  constructor(coordinator, renderer, settings, options = {}) {
     this._coord    = coordinator;
     this._renderer = renderer;
     this._settings = settings;
+    this._bot      = options.botDifficulty ? new LocalBotOpponent(coordinator, options.botDifficulty) : null;
     this._canvas   = null;
     this._ui       = null;
 
@@ -31,14 +33,30 @@ export class LocalMatchController {
     this._stamp  = { pattern: null, color: null };
     this._patternBtns = { [PlayerColor.RED]: {}, [PlayerColor.BLUE]: {} };
 
-    this._prevPhase    = null;
-    this._handlers     = null;
-    this._newGameCb    = null;
-    this._timerInterval = null;
-    this._timerLeft    = 0;
+    this._prevPhase      = null;
+    this._lastStatsBoard = null;
+    this._cachedRed      = 0;
+    this._cachedBlue     = 0;
+    this._handlers       = null;
+    this._newGameCb      = null;
+    this._timerInterval  = null;
+    this._timerLeft      = 0;
+    this._blueTitleEl    = null;
+    this._blueTitleText  = '';
   }
 
   onNewGame(fn) { this._newGameCb = fn; }
+
+  _isHumanColor(color) {
+    return !this._bot || color === PlayerColor.RED;
+  }
+
+  _syncBotDraft() {
+    if (!this._bot) return;
+    const draft = this._coord.getDraft(PlayerColor.BLUE);
+    this._drafts[PlayerColor.BLUE] = draft;
+    this._renderer.setDraft(PlayerColor.BLUE, draft);
+  }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -61,14 +79,29 @@ export class LocalMatchController {
     window.addEventListener('resize',       this._handlers.resize);
 
     ui.redReady.addEventListener('click',  () => this._onReady(PlayerColor.RED));
-    ui.blueReady.addEventListener('click', () => this._onReady(PlayerColor.BLUE));
+    ui.blueReady.addEventListener('click', () => { if (!this._bot) this._onReady(PlayerColor.BLUE); });
     ui.newGame.addEventListener('click',   () => { if (this._newGameCb) this._newGameCb(); });
 
     this._buildPatternButtons(PlayerColor.RED,  ui.redPatterns);
     this._buildPatternButtons(PlayerColor.BLUE, ui.bluePatterns);
 
-    this._coord.onUpdate(() => this._doRender());
+    if (this._bot) {
+      const title = document.querySelector('.panel-blue .panel-title');
+      if (title) {
+        this._blueTitleEl = title;
+        this._blueTitleText = title.textContent;
+        title.textContent = `Blue · ${this._bot.label}`;
+      }
+    }
+
+    this._coord.onUpdate(() => {
+      this._handlePhaseTransition();
+      if (this._bot) this._bot.handleUpdate();
+      this._syncBotDraft();
+      this._doRender();
+    });
     this._onResize();
+    if (this._bot) this._bot.handleUpdate();
   }
 
   detach() {
@@ -78,6 +111,10 @@ export class LocalMatchController {
     this._canvas.removeEventListener('pointerdown',  this._handlers.pointerdown);
     window.removeEventListener('pointerup', this._handlers.pointerup);
     window.removeEventListener('resize',    this._handlers.resize);
+    if (this._blueTitleEl) {
+      this._blueTitleEl.textContent = this._blueTitleText || 'Blue';
+      this._blueTitleEl = null;
+    }
     this._stopTimer();
     this._coord.dispose();
   }
@@ -90,10 +127,12 @@ export class LocalMatchController {
       const btn = document.createElement('button');
       btn.className = 'btn-pattern';
       btn.title     = `${pattern.name} (${pattern.cells.length} cells) — ${pattern.desc}`;
+      const role = pattern.role ?? pattern.tag;
       btn.innerHTML =
-        `<span class="pat-tag" style="background:${pattern.tagColor}">${pattern.tag}</span>` +
+        `<span class="pat-main"><span class="pat-tag" style="background:${pattern.tagColor}">${pattern.tag}</span>` +
         `<span class="pat-name">${pattern.name}</span>` +
-        `<span class="pat-cost">${pattern.cells.length}c</span>`;
+        `<span class="pat-cost">${pattern.cells.length}c</span></span>` +
+        `<span class="pat-role">${role}</span>`;
       btn.addEventListener('click', () => this._toggleStampMode(pattern, color));
       container.appendChild(btn);
       this._patternBtns[color][pattern.id] = btn;
@@ -168,6 +207,7 @@ export class LocalMatchController {
     if (!pos) return;
     const mid   = Math.floor(this._settings.boardWidth / 2);
     const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
+    if (!this._isHumanColor(color)) return;
     if (this._coord.isReady(color)) return;
 
     const draft   = this._drafts[color];
@@ -188,7 +228,7 @@ export class LocalMatchController {
   }
 
   _dragProcessCell(pos, color) {
-    if (!this._drag.active || this._coord.isReady(color)) return;
+    if (!this._drag.active || !this._isHumanColor(color) || this._coord.isReady(color)) return;
     const key = pos.key();
     if (this._drag.processed.has(key)) return;
     this._drag.processed.add(key);
@@ -219,6 +259,7 @@ export class LocalMatchController {
     if (!pos) return;
     const mid   = Math.floor(this._settings.boardWidth / 2);
     const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
+    if (!this._isHumanColor(color)) return;
     if (this._coord.getBank(color) <= 0) return;
 
     this._drag.active    = true;
@@ -234,6 +275,7 @@ export class LocalMatchController {
     this._drag.processed.add(key);
     const mid   = Math.floor(this._settings.boardWidth / 2);
     const color = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
+    if (!this._isHumanColor(color)) return;
     this._coord.placeLiveCell(color, pos); // emits internally
   }
 
@@ -241,7 +283,7 @@ export class LocalMatchController {
     const pos = this._getPos(e);
     if (!pos) return;
     const { pattern, color } = this._stamp;
-    if (!color) return;
+    if (!color || !this._isHumanColor(color)) return;
     const { valid } = this._computeLiveStampCells(pattern, pos, color);
     for (const p of valid) {
       if (!this._coord.placeLiveCell(color, p)) break; // stop if bank runs out
@@ -278,6 +320,7 @@ export class LocalMatchController {
     const phase           = this._coord.match.phase;
     const isContinuousSim = this._settings.continuousMode && phase === MatchPhase.SIMULATION;
     if (!isContinuousSim && phase !== MatchPhase.SETUP_PLACEMENT && phase !== MatchPhase.REINFORCEMENT_PLACEMENT) return;
+    if (!this._isHumanColor(color)) return;
 
     const same = this._stamp.pattern?.id === pattern.id && this._stamp.color === color;
     if (same) {
@@ -293,7 +336,7 @@ export class LocalMatchController {
     const pos = this._getPos(e);
     if (!pos) return;
     const { pattern, color } = this._stamp;
-    if (!color || this._coord.isReady(color)) return;
+    if (!color || !this._isHumanColor(color) || this._coord.isReady(color)) return;
 
     const { valid } = this._computeStampCells(pattern, pos, color);
     if (valid.length === 0) return;
@@ -404,6 +447,10 @@ export class LocalMatchController {
     const color           = pos.col < mid ? PlayerColor.RED : PlayerColor.BLUE;
     const phase           = this._coord.match.phase;
     const isContinuousSim = this._settings.continuousMode && phase === MatchPhase.SIMULATION;
+    if (!this._isHumanColor(color)) {
+      this._canvas.style.cursor = 'not-allowed';
+      return;
+    }
     if (isContinuousSim) {
       this._canvas.style.cursor = this._coord.getBank(color) > 0 ? 'crosshair' : 'not-allowed';
       return;
@@ -470,33 +517,41 @@ export class LocalMatchController {
     ctx.fill();
   }
 
-  // ── Main render ───────────────────────────────────────────────────────────
+  // ── Phase transition (called from onUpdate only, not pointer events) ────────
 
-  _doRender() {
-    const match   = this._coord.match;
-    const { phase, board, result, totalGenerations, settings } = match;
-    const roundNumber = this._coord.getRoundNumber();
+  _renderEcology(metrics) {
+    const pairs = [
+      [metrics.stability, this._ui.ecoStability, this._ui.ecoStabilityBar],
+      [metrics.diversity, this._ui.ecoDiversity, this._ui.ecoDiversityBar],
+      [metrics.age, this._ui.ecoAge, this._ui.ecoAgeBar],
+      [metrics.volatility, this._ui.ecoVolatility, this._ui.ecoVolatilityBar],
+      [metrics.territory, this._ui.ecoTerritory, this._ui.ecoTerritoryBar],
+    ];
 
-    // ── Phase transition handling ──
-    const isPlacement     = phase === MatchPhase.SETUP_PLACEMENT ||
-                            phase === MatchPhase.REINFORCEMENT_PLACEMENT;
-    const isContinuousSim = settings.continuousMode && phase === MatchPhase.SIMULATION;
-    const wasPlacement    = this._prevPhase === MatchPhase.SETUP_PLACEMENT ||
-                            this._prevPhase === MatchPhase.REINFORCEMENT_PLACEMENT;
-
-    if (isPlacement && !wasPlacement) {
-      // Just entered a placement phase — start timer
-      this._startTimer();
+    for (const [value, label, bar] of pairs) {
+      const pct = Math.max(0, Math.min(100, value ?? 0));
+      if (label) label.textContent = `${pct}%`;
+      if (bar) bar.style.width = `${pct}%`;
     }
+  }
 
-    if (phase === MatchPhase.SIMULATION && this._prevPhase !== MatchPhase.SIMULATION) {
-      // Just entered simulation — stop timer, clear drafts
+  _handlePhaseTransition() {
+    const { phase, settings } = this._coord.match;
+    const prev = this._prevPhase;
+
+    const isPlacement  = phase === MatchPhase.SETUP_PLACEMENT ||
+                         phase === MatchPhase.REINFORCEMENT_PLACEMENT;
+    const wasPlacement = prev  === MatchPhase.SETUP_PLACEMENT ||
+                         prev  === MatchPhase.REINFORCEMENT_PLACEMENT;
+
+    if (isPlacement && !wasPlacement) this._startTimer();
+
+    if (phase === MatchPhase.SIMULATION && prev !== MatchPhase.SIMULATION) {
       this._stopTimer();
       for (const color of [PlayerColor.RED, PlayerColor.BLUE]) {
         this._drafts[color] = [];
         this._renderer.setDraft(color, []);
       }
-      // Only clear stamp if NOT entering continuous sim (players keep their stamp selection)
       if (!settings.continuousMode) {
         this._stamp = { pattern: null, color: null };
         this._renderer.clearStampPreview();
@@ -504,6 +559,18 @@ export class LocalMatchController {
     }
 
     this._prevPhase = phase;
+  }
+
+  // ── Main render ───────────────────────────────────────────────────────────
+
+  _doRender() {
+    const match   = this._coord.match;
+    const { phase, board, result, totalGenerations, settings } = match;
+    const roundNumber = this._coord.getRoundNumber();
+
+    const isPlacement     = phase === MatchPhase.SETUP_PLACEMENT ||
+                            phase === MatchPhase.REINFORCEMENT_PLACEMENT;
+    const isContinuousSim = settings.continuousMode && phase === MatchPhase.SIMULATION;
 
     // ── Draw board ──
     const redReady  = this._coord.isReady(PlayerColor.RED);
@@ -511,15 +578,14 @@ export class LocalMatchController {
     this._renderer.setReadyStates(redReady, blueReady);
     this._renderer.render(board, phase, roundNumber);
 
-    // ── Cell counts ──
-    let red = 0, blue = 0;
-    for (let r = 0; r < board.height; r++) {
-      for (let c = 0; c < board.width; c++) {
-        const s = board.getCellAt(r, c);
-        if      (s === 'red')  red++;
-        else if (s === 'blue') blue++;
-      }
+    // ── Cell counts (cached by board reference — only recomputed when board changes) ──
+    if (board !== this._lastStatsBoard) {
+      const stats = this._coord.getStats();
+      this._cachedRed      = stats.redCount;
+      this._cachedBlue     = stats.blueCount;
+      this._lastStatsBoard = board;
     }
+    const red = this._cachedRed, blue = this._cachedBlue;
     const total = red + blue;
 
     // ── Dominance bar ──
@@ -530,9 +596,12 @@ export class LocalMatchController {
     }
     if (this._ui.domRedPct)  this._ui.domRedPct.textContent  = total > 0 ? redPct + '%'           : '–';
     if (this._ui.domBluePct) this._ui.domBluePct.textContent = total > 0 ? (100 - redPct) + '%'   : '–';
+    this._renderEcology(this._coord.getEcologyMetrics());
 
     // ── Status bar ──
-    this._ui.genCounter.textContent = `Gen ${totalGenerations} / ${settings.maxGenerations}`;
+    this._ui.genCounter.textContent = settings.maxGenerations > 0
+      ? `Gen ${totalGenerations} / ${settings.maxGenerations}`
+      : `Gen ${totalGenerations} / endless`;
 
     let phaseText = '';
     switch (phase) {
@@ -579,6 +648,7 @@ export class LocalMatchController {
         this._patternBtns[PlayerColor.BLUE], this._ui.blueSpark],
     ]) {
       const isReady   = this._coord.isReady(color);
+      const isHuman   = this._isHumanColor(color);
       const staged    = this._drafts[color].length;
       const maxBudget = this._coord.getMaxPlaceable(color);
       const bank      = this._coord.getBank(color);
@@ -587,7 +657,9 @@ export class LocalMatchController {
       cellsEl.textContent = `Cells alive: ${alive}`;
 
       if (isContinuousSim) {
-        placedEl.textContent = bank > 0 ? `Bank: ${bank} — click to place` : 'Waiting for cells…';
+        placedEl.textContent = bank > 0
+          ? (isHuman ? `Bank: ${bank} — click to place` : `Bank: ${bank} — bot planning`)
+          : 'Waiting for cells…';
         bankEl.textContent   = catchup > 0 ? `+${catchup} catch-up` : '';
       } else if (isPlacement) {
         placedEl.textContent = isSetup
@@ -601,12 +673,12 @@ export class LocalMatchController {
         catchupEl.textContent = (!isSetup && catchup > 0) ? `+${catchup} catch-up` : '';
       }
 
-      readyEl.disabled    = !isPlacement || simRunning;
+      readyEl.disabled    = !isPlacement || simRunning || !isHuman;
       readyEl.textContent = isContinuousSim ? '—' : (isReady ? 'Cancel' : 'Ready');
       readyEl.classList.toggle('btn-ready-active', isReady && !isContinuousSim);
 
       // Pattern buttons: enabled during placement phases AND during continuous simulation
-      const showPatterns = (isPlacement && !simRunning) || isContinuousSim;
+      const showPatterns = ((isPlacement && !simRunning) || isContinuousSim) && isHuman;
       for (const pattern of PATTERNS) {
         const btn = patternBtns[pattern.id];
         if (!btn) continue;
@@ -619,6 +691,7 @@ export class LocalMatchController {
       this._drawSparkline(sparkCanvas, this._coord.getHistory(color), color);
     }
 
-    this._ui.newGame.style.display = phase === MatchPhase.ENDED ? 'inline-block' : 'none';
+    this._ui.newGame.textContent = phase === MatchPhase.ENDED ? 'Back to Settings' : 'Give Up';
+    this._ui.newGame.style.display = 'inline-block';
   }
 }

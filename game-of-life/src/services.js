@@ -197,7 +197,7 @@ export class StandardWinConditionEvaluator {
     if (!redAlive)               return MatchResultType.BLUE_VICTORY;
     if (!blueAlive)              return MatchResultType.RED_VICTORY;
 
-    if (totalGenerations >= settings.maxGenerations) {
+    if (settings.maxGenerations > 0 && totalGenerations >= settings.maxGenerations) {
       if (redCount  > blueCount) return MatchResultType.RED_VICTORY;
       if (blueCount > redCount)  return MatchResultType.BLUE_VICTORY;
       return MatchResultType.DRAW;
@@ -210,18 +210,83 @@ export class StandardWinConditionEvaluator {
 // ── IBoardStatisticsService ───────────────────────────────────────────────────
 
 export class BoardStatisticsService {
-  countCells(board, state) {
-    let count = 0;
+  getStatistics(board) {
+    let redCount = 0, blueCount = 0;
     for (let r = 0; r < board.height; r++)
-      for (let c = 0; c < board.width; c++)
-        if (board.getCellAt(r, c) === state) count++;
-    return count;
+      for (let c = 0; c < board.width; c++) {
+        const s = board.getCellAt(r, c);
+        if      (s === CellState.RED)  redCount++;
+        else if (s === CellState.BLUE) blueCount++;
+      }
+    return { redCount, blueCount };
   }
 
-  getStatistics(board) {
-    return {
-      redCount:  this.countCells(board, CellState.RED),
-      blueCount: this.countCells(board, CellState.BLUE),
-    };
+  getEcologyMetrics(board) {
+    const area = board.width * board.height;
+    let live = 0;
+    let red = 0;
+    let blue = 0;
+    let stable = 0;
+    let ageSum = 0;
+    let birthPressure = 0;
+    const occupiedRows = new Set();
+    const occupiedCols = new Set();
+
+    for (let row = 0; row < board.height; row++) {
+      for (let col = 0; col < board.width; col++) {
+        const current = board.getCellAt(row, col);
+        let redN = 0;
+        let blueN = 0;
+
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = row + dr;
+            const nc = col + dc;
+            if (nr < 0 || nr >= board.height || nc < 0 || nc >= board.width) continue;
+            const state = board.getCellAt(nr, nc);
+            if (state === CellState.RED) redN++;
+            else if (state === CellState.BLUE) blueN++;
+          }
+        }
+
+        const totalN = redN + blueN;
+        if (current === CellState.EMPTY) {
+          if (totalN === 3) birthPressure++;
+          continue;
+        }
+
+        live++;
+        ageSum += board.getAgeAt(row, col);
+        occupiedRows.add(row);
+        occupiedCols.add(col);
+        if (current === CellState.RED) red++;
+        else blue++;
+
+        const same = current === CellState.RED ? redN : blueN;
+        if (same >= 2 && same <= 3 && totalN <= 3) stable++;
+      }
+    }
+
+    if (live === 0) {
+      return {
+        stability: 0,
+        diversity: 0,
+        age: 0,
+        volatility: 0,
+        territory: 0,
+      };
+    }
+
+    const stability = Math.round((stable / live) * 100);
+    const diversity = Math.round((1 - Math.abs(red - blue) / live) * 100);
+    const age = Math.round(Math.min(ageSum / live / 24, 1) * 100);
+    const pressure = Math.min((birthPressure + (live - stable)) / Math.max(live, 1), 1);
+    const volatility = Math.round(pressure * 100);
+    const footprint = (occupiedRows.size / board.height + occupiedCols.size / board.width) / 2;
+    const density = Math.min(live / Math.max(area * 0.18, 1), 1);
+    const territory = Math.round(((footprint * 0.65) + (density * 0.35)) * 100);
+
+    return { stability, diversity, age, volatility, territory };
   }
 }

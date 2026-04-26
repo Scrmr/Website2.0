@@ -27,6 +27,7 @@ const settingsUI     = {
   summaryMode:      document.getElementById('summary-mode'),
   summaryBoard:     document.getElementById('summary-board'),
   summarySetup:     document.getElementById('summary-setup'),
+  summaryOpponent:  document.getElementById('summary-opponent'),
   summaryReinforce: document.getElementById('summary-reinforcement'),
   summaryPacing:    document.getElementById('summary-pacing'),
   summaryTimer:     document.getElementById('summary-timer'),
@@ -91,6 +92,7 @@ const SPEED_PRESETS = {
 };
 
 const GENERATION_PRESETS = {
+  endless: { label: 'Endless', summary: 'Endless game' },
   100: { label: '100 generations', summary: 'Short game' },
   250: { label: '250 generations', summary: 'Standard game' },
   500: { label: '500 generations', summary: 'Long game' },
@@ -103,12 +105,21 @@ const TIMER_PRESETS = {
   45: { summary: '45 second timer',    help: 'Leaves room for careful pattern placement while still enforcing pace.' },
 };
 
+const OPPONENT_PRESETS = {
+  normal:  { label: 'Normal bot',  summary: 'Normal bot',  help: 'Balanced bot that uses anchors, movers, traps, and measured pressure.' },
+  hard:    { label: 'Hard bot',    summary: 'Hard bot',    help: 'Reads the front more aggressively and spends banks in sharper bursts.' },
+  strange: { label: 'Strange bot', summary: 'Strange bot', help: 'Prefers odd oscillators, delayed chaos, and unstable ecological gambits.' },
+  cruel:   { label: 'Cruel bot',   summary: 'Cruel bot',   help: 'Pushes toward weak regions and uses attacking formations more often.' },
+  human:   { label: 'Human local', summary: 'Human local', help: 'Two people share the same screen: Red on the left, Blue on the right.' },
+};
+
 function readSettings() {
-  const grid   = GRID_PRESETS[activeOptionValue('.opt-grid', 'medium')];
+  const grid   = GRID_PRESETS[activeOptionValue('.opt-grid', 'huge')];
   const speed  = SPEED_PRESETS[activeOptionValue('.opt-speed', 'normal')];
-  const gens   = parseInt(activeOptionValue('.opt-gens', '250'), 10);
+  const gensVal = activeOptionValue('.opt-gens', 'endless');
+  const gens   = gensVal === 'endless' ? 0 : parseInt(gensVal, 10);
   const timer  = parseInt(activeOptionValue('.opt-timer', '0'), 10);
-  const pacing = PACING_PRESETS[activeOptionValue('.opt-pacing', '10')];
+  const pacing = PACING_PRESETS[activeOptionValue('.opt-pacing', 'continuous')];
   const { setupCells, reinMin, reinMax } = readPlacementInputs(true);
 
   return new GameSettings({
@@ -183,11 +194,12 @@ function renderModeFacts(facts) {
 
 function syncSettingsUI() {
   const mode        = MODE_PRESETS[activeOptionValue('.opt-mode', 'square')];
-  const grid        = GRID_PRESETS[activeOptionValue('.opt-grid', 'medium')];
+  const grid        = GRID_PRESETS[activeOptionValue('.opt-grid', 'huge')];
   const speed       = SPEED_PRESETS[activeOptionValue('.opt-speed', 'normal')];
-  const generations = GENERATION_PRESETS[activeOptionValue('.opt-gens', '250')];
+  const generations = GENERATION_PRESETS[activeOptionValue('.opt-gens', 'endless')];
   const timer       = TIMER_PRESETS[activeOptionValue('.opt-timer', '0')];
-  const pacing      = PACING_PRESETS[activeOptionValue('.opt-pacing', '10')];
+  const pacing      = PACING_PRESETS[activeOptionValue('.opt-pacing', 'continuous')];
+  const opponent    = OPPONENT_PRESETS[activeOptionValue('.opt-opponent', 'normal')];
   const { setupCells, reinMin, reinMax } = readPlacementInputs();
   const totalCells  = grid.boardWidth * grid.boardHeight;
 
@@ -195,7 +207,7 @@ function syncSettingsUI() {
   renderModeFacts(mode.facts);
 
   settingsUI.pacingHelp.textContent =
-    `${grid.summary} gives you ${totalCells} total cells to fight over. ${grid.boardNote} ${speed.help} If neither player is eliminated by ${generations.label}, the higher live-cell count wins. ${pacing.help}`;
+    `${grid.summary} gives you ${totalCells} total cells to cultivate and contest. ${grid.boardNote} ${speed.help} ${generations.label === 'Endless' ? 'The match keeps living until a player is eliminated or gives up.' : `If neither player is eliminated by ${generations.label}, the higher live-cell count wins.`} ${pacing.help}`;
 
   settingsUI.placementHelp.textContent = pacing.continuous
     ? `Setup requires exactly ${setupCells} cells per player. After that, both players receive ${reinMin} cells in their bank every ${pacing.blockSize} generations. Spend them by clicking or dragging during simulation — no Ready button, no pauses.`
@@ -208,10 +220,11 @@ function syncSettingsUI() {
   settingsUI.summaryMode.textContent       = mode.label;
   settingsUI.summaryBoard.textContent      = `${grid.summary} (${totalCells} cells)`;
   settingsUI.summarySetup.textContent      = `${setupCells} cells each`;
+  settingsUI.summaryOpponent.textContent   = opponent.summary;
   settingsUI.summaryReinforce.textContent  = pacing.continuous ? `${reinMin} cells/drop (auto)` : `${reinMin}-${reinMax} cells`;
   settingsUI.summaryPacing.textContent     = `${speed.label}, ${generations.summary}, ${pacing.summary}`;
   settingsUI.summaryTimer.textContent      = pacing.continuous ? 'N/A (continuous)' : timer.summary;
-  settingsUI.summaryTip.textContent        = mode.tip;
+  settingsUI.summaryTip.textContent        = `${mode.tip} ${opponent.help}`;
   settingsUI.startBtn.textContent          = `Start ${mode.actionLabel}`;
 }
 
@@ -235,6 +248,7 @@ setupToggleGroup('.opt-speed');
 setupToggleGroup('.opt-gens');
 setupToggleGroup('.opt-timer');
 setupToggleGroup('.opt-pacing');
+setupToggleGroup('.opt-opponent');
 
 [settingsUI.setupInput, settingsUI.reinMinInput, settingsUI.reinMaxInput].forEach(input => {
   input.addEventListener('input', syncSettingsUI);
@@ -295,6 +309,16 @@ function buildGameUI() {
     domBlue:      document.getElementById('dom-blue'),
     domRedPct:    document.getElementById('dom-red-pct'),
     domBluePct:   document.getElementById('dom-blue-pct'),
+    ecoStability: document.getElementById('eco-stability'),
+    ecoDiversity: document.getElementById('eco-diversity'),
+    ecoAge:       document.getElementById('eco-age'),
+    ecoVolatility: document.getElementById('eco-volatility'),
+    ecoTerritory: document.getElementById('eco-territory'),
+    ecoStabilityBar: document.getElementById('eco-stability-bar'),
+    ecoDiversityBar: document.getElementById('eco-diversity-bar'),
+    ecoAgeBar:       document.getElementById('eco-age-bar'),
+    ecoVolatilityBar: document.getElementById('eco-volatility-bar'),
+    ecoTerritoryBar: document.getElementById('eco-territory-bar'),
     redCells:     document.getElementById('red-cells'),
     redPlaced:    document.getElementById('red-placed'),
     redBank:      document.getElementById('red-bank'),
@@ -319,7 +343,7 @@ function buildGameUI() {
 
 let activeController = null;
 
-function startGame(settings, mode = 'square') {
+function startGame(settings, mode = 'square', options = {}) {
   if (activeController) activeController.detach();
 
   const match        = new Match(settings);
@@ -338,7 +362,7 @@ function startGame(settings, mode = 'square') {
   const canvas   = document.getElementById('game-canvas');
   const renderer = mode === 'hex' ? new HexGameRenderer(canvas, settings)
                                   : new GameRenderer(canvas, settings);
-  const ctrl     = new LocalMatchController(coord, renderer, settings);
+  const ctrl     = new LocalMatchController(coord, renderer, settings, options);
 
   ctrl.attach(canvas, buildGameUI());
   ctrl.onNewGame(() => {
@@ -352,8 +376,11 @@ function startGame(settings, mode = 'square') {
 // Start button (local)
 settingsUI.startBtn.addEventListener('click', () => {
   const mode = activeOptionValue('.opt-mode', 'square');
+  const opponent = activeOptionValue('.opt-opponent', 'normal');
   showGame();
-  startGame(readSettings(), mode);
+  startGame(readSettings(), mode, {
+    botDifficulty: opponent === 'human' ? null : opponent,
+  });
 });
 
 // ── Online ────────────────────────────────────────────────────────────────────

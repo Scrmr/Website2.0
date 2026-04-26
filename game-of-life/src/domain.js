@@ -116,7 +116,8 @@ export class GameSettings {
     this.reinforcementMinPlacementCount = overrides.reinforcementMinPlacementCount ?? 5;
     this.reinforcementMaxPlacementCount = overrides.reinforcementMaxPlacementCount ?? 10;
     this.simulationBlockSize            = overrides.simulationBlockSize            ?? 10;
-    this.maxGenerations                 = overrides.maxGenerations                 ?? 250;
+    // 0 means endless: the match ends only by elimination or surrender/new game.
+    this.maxGenerations                 = overrides.maxGenerations                 ?? 0;
     this.simulationStepMs               = overrides.simulationStepMs               ?? 140;
     // Contested middle strip: both players may place here from this round onward.
     this.contestedZoneWidth             = overrides.contestedZoneWidth             ?? 4;
@@ -347,6 +348,146 @@ export const PATTERNS = [
                   'Eater absorbs it and returns to its original form. Place ' +
                   'near your border to neutralise incoming movers cheaply.',
     cells:        [[0,0],[0,1],[1,0],[1,2],[2,2],[3,2],[3,3]],
+    mirrorForBlue: true,
+  },
+
+  {
+    id:           'ship',
+    name:         'Ship',
+    tag:          'Anchor',
+    tagColor:     '#6fcf97',
+    role:         'Small diagonal bunker',
+    desc:         '6-cell still life. Slightly denser than a boat and good ' +
+                  'for sealing diagonal leaks around a larger stable wall.',
+    cells:        [[0,0],[0,1],[1,0],[1,2],[2,1],[2,2]],
+    mirrorForBlue: true,
+  },
+  {
+    id:           'longboat',
+    name:         'Long Boat',
+    tag:          'Stable',
+    tagColor:     '#6fcf97',
+    role:         'Cheap edge holder',
+    desc:         '7-cell still life with a longer diagonal edge. Useful ' +
+                  'when a normal boat is too compact to suppress a lane.',
+    cells:        [[0,0],[0,1],[1,0],[1,2],[2,1],[2,3],[3,2]],
+    mirrorForBlue: true,
+  },
+  {
+    id:           'barge',
+    name:         'Barge',
+    tag:          'Stable',
+    tagColor:     '#6fcf97',
+    role:         'Thin stable bridge',
+    desc:         '6-cell diagonal still life. Spans more distance than a ' +
+                  'block without filling the centre, so nearby births can be shaped.',
+    cells:        [[0,1],[0,2],[1,0],[1,3],[2,1],[2,2]],
+    mirrorForBlue: true,
+  },
+  {
+    id:           'clock',
+    name:         'Clock',
+    tag:          'Pulse',
+    tagColor:     '#f2994a',
+    role:         'Tiny local churn',
+    desc:         '6-cell period-2 oscillator. Low-cost pressure that keeps ' +
+                  'a small patch alive without committing to a large engine.',
+    cells:        [[0,2],[1,0],[1,2],[2,1],[2,3],[3,1]],
+    mirrorForBlue: false,
+  },
+  {
+    id:           'pentadecathlon',
+    name:         'Pentadecathlon',
+    tag:          'Pulse',
+    tagColor:     '#f2994a',
+    role:         'Long-period metronome',
+    desc:         '12-cell period-15 oscillator. Excellent for a durable ' +
+                  'rear engine that periodically disturbs nearby lanes.',
+    cells:        [[0,1],[1,1],[2,0],[2,2],[3,1],[4,1],[5,1],[6,1],[7,0],[7,2],[8,1],[9,1]],
+    mirrorForBlue: false,
+  },
+  {
+    id:           'pulsar',
+    name:         'Pulsar',
+    tag:          'Pulse',
+    tagColor:     '#f2994a',
+    role:         'Large pressure engine',
+    desc:         '48-cell period-3 oscillator. Expensive, loud, and hard ' +
+                  'to ignore; it broadcasts rhythmic birth pressure in every direction.',
+    cells:        [
+      [0,2],[0,3],[0,4],[0,8],[0,9],[0,10],
+      [2,0],[2,5],[2,7],[2,12],
+      [3,0],[3,5],[3,7],[3,12],
+      [4,0],[4,5],[4,7],[4,12],
+      [5,2],[5,3],[5,4],[5,8],[5,9],[5,10],
+      [7,2],[7,3],[7,4],[7,8],[7,9],[7,10],
+      [8,0],[8,5],[8,7],[8,12],
+      [9,0],[9,5],[9,7],[9,12],
+      [10,0],[10,5],[10,7],[10,12],
+      [12,2],[12,3],[12,4],[12,8],[12,9],[12,10],
+    ],
+    mirrorForBlue: false,
+  },
+  {
+    id:           'mwss',
+    name:         'MWSS',
+    tag:          'Mover',
+    tagColor:     '#e84040',
+    role:         'Heavier lane attack',
+    desc:         'Middleweight spaceship. Costs more than LWSS but carries ' +
+                  'a broader collision profile through cluttered lanes.',
+    cells:        [[0,2],[0,3],[1,0],[1,5],[2,6],[3,0],[3,6],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6]],
+    mirrorForBlue: true,
+  },
+  {
+    id:           'hwss',
+    name:         'HWSS',
+    tag:          'Mover',
+    tagColor:     '#e84040',
+    role:         'Heavy breach ship',
+    desc:         'Heavyweight spaceship. A costly moving wall that can punch ' +
+                  'through loose debris better than smaller ships.',
+    cells:        [[0,2],[0,3],[1,0],[1,6],[2,7],[3,0],[3,7],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7]],
+    mirrorForBlue: true,
+  },
+  {
+    id:           'bheptomino',
+    name:         'B-heptomino',
+    tag:          'Chaos',
+    tagColor:     '#bb6bd9',
+    role:         'Medium methuselah',
+    desc:         '7-cell seed that stays active for a long time before ' +
+                  'settling. Smaller and more controllable than Acorn.',
+    cells:        [[0,0],[0,1],[1,1],[1,2],[2,1],[2,2],[3,1]],
+    mirrorForBlue: true,
+  },
+  {
+    id:           'piheptomino',
+    name:         'Pi-heptomino',
+    tag:          'Chaos',
+    tagColor:     '#bb6bd9',
+    role:         'Symmetric burst seed',
+    desc:         '7-cell methuselah with a compact symmetric start. Useful ' +
+                  'for creating a timed bloom near an already unstable front.',
+    cells:        [[0,0],[0,1],[0,2],[1,0],[1,2],[2,0],[2,2]],
+    mirrorForBlue: false,
+  },
+  {
+    id:           'gosper',
+    name:         'Gosper Gun',
+    tag:          'Engine',
+    tagColor:     '#56ccf2',
+    role:         'Glider factory',
+    desc:         '36-cell glider gun. Very expensive but turns a safe rear ' +
+                  'position into a repeating stream of long-range pressure.',
+    cells:        [
+      [5,1],[5,2],[6,1],[6,2],
+      [3,13],[3,14],[4,12],[4,16],[5,11],[5,17],[6,11],[6,15],[6,17],[6,18],
+      [7,11],[7,17],[8,12],[8,16],[9,13],[9,14],
+      [1,25],[2,23],[2,25],[3,21],[3,22],[4,21],[4,22],[5,21],[5,22],
+      [6,23],[6,25],[7,25],
+      [3,35],[3,36],[4,35],[4,36],
+    ],
     mirrorForBlue: true,
   },
 
