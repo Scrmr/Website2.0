@@ -1,0 +1,60 @@
+name: Diagnose Node.js 24 candidate
+on:
+  push:
+    branches: [diagnose/node24]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --engine-strict
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Compare configured credentials without exposing them
+        env:
+          REPOSITORY_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          gcloud app versions describe 20260426t102513 --service default --format='json(runtime,envVariables)' > "$RUNNER_TEMP/old-version.json"
+          gcloud app versions describe node24-43586923752-1 --service default --format='json(runtime,envVariables)' > "$RUNNER_TEMP/candidate-version.json"
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          const read = name => JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/' + name));
+          const old = read('old-version.json'), candidate = read('candidate-version.json');
+          const a = old.envVariables?.OPENAI_API_KEY, b = candidate.envVariables?.OPENAI_API_KEY;
+          console.log(JSON.stringify({oldRuntime:old.runtime,candidateRuntime:candidate.runtime,
+            oldKeyPresent:!!a,candidateKeyPresent:!!b,keysMatch:a===b,
+            candidateMatchesRepository:b===process.env.REPOSITORY_OPENAI_API_KEY}));
+          JS
+      - name: Classify candidate AI errors
+        run: |
+          gcloud logging read 'resource.type="gae_app" AND resource.labels.version_id="node24-43586923752-1" AND textPayload:"OpenAI error:"' --freshness=1h --limit=10 --format=json > "$RUNNER_TEMP/ai-errors.json"
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          const entries = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/ai-errors.json'));
+          for (const entry of entries) {
+            const text = JSON.stringify(entry.textPayload || entry.jsonPayload || '');
+            console.log(JSON.stringify({timestamp:entry.timestamp,
+              quota:/insufficient_quota|exceeded.*quota|billing/i.test(text),
+              authentication:/401|invalid_api_key|incorrect api key|authentication/i.test(text),
+              modelAccess:/model_not_found|does not exist|access to model/i.test(text),
+              rateLimit:/rate_limit_exceeded|rate limit/i.test(text),
+              network:/connection error|ENOTFOUND|ETIMEDOUT|certificate|TLS|fetch failed/i.test(text),
+              statusCodes:[...new Set(text.match(/\b(?:400|401|403|404|408|429|500|502|503)\b/g)||[])]}));
+          }
+          console.log('Matching error entries: ' + entries.length);
+          JS
+      - name: Test candidate multiplayer independently of AI
+        env:
+          BASE_URL: https://node24-43586923752-1-dot-poemgenerator-492211.nw.r.appspot.com
+          EXPECTED_VERSION: node24-43586923752-1
+          RUN_AI: '0'
+        run: node scripts/smoke-live.js
