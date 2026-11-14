@@ -48,12 +48,13 @@ function pickEncryptedIndices(tokens) {
 // ── HTTP routes ───────────────────────────────────────────────────────────────
 
 app.get('/', (_req, res) => {
-  res.json({ status: 'ok', message: 'cypherpoem server is running' });
+  res.json({ status: 'ok', message: 'cypherpoem server is running',
+    node: process.version, version: process.env.GAE_VERSION || 'local' });
 });
 
 app.post('/generate-poem', async (req, res) => {
-  const { input } = req.body;
-  if (!input || typeof input !== 'string') {
+  const { input } = req.body || {};
+  if (typeof input !== 'string' || !input.trim() || input.length > 4000) {
     return res.status(400).json({ error: 'Missing or invalid input.' });
   }
 
@@ -84,13 +85,18 @@ app.post('/generate-poem', async (req, res) => {
 });
 
 app.post('/api/generatePhrases', async (req, res) => {
-  const { poemSoFar, lineNumber } = req.body;
-
-  const context = poemSoFar && poemSoFar.length > 0
-    ? `The poem so far:\n${poemSoFar.join('\n')}\n\nNow generate options for line ${lineNumber}.`
-    : 'Generate options for the opening line of a poem.';
+  const { poemSoFar = [], lineNumber = 1 } = req.body || {};
+  if (!Array.isArray(poemSoFar) || poemSoFar.length > 64 ||
+      poemSoFar.some(line => typeof line !== 'string' || line.length > 4000) ||
+      !Number.isInteger(lineNumber) || lineNumber < 1 || lineNumber > 64) {
+    return res.status(400).json({ error: 'Invalid poem or line number.' });
+  }
 
   try {
+    const context = poemSoFar.length > 0
+      ? `The poem so far:\n${poemSoFar.join('\n')}\n\nNow generate options for line ${lineNumber}.`
+      : 'Generate options for the opening line of a poem.';
+
     const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -110,7 +116,8 @@ app.post('/api/generatePhrases', async (req, res) => {
     const parsed  = JSON.parse(completion.choices[0].message.content);
     const phrases = parsed.phrases;
 
-    if (!Array.isArray(phrases) || phrases.length < 3) {
+    if (!Array.isArray(phrases) || phrases.length < 3 ||
+        phrases.slice(0, 3).some(line => typeof line !== 'string' || !line.trim())) {
       return res.status(500).json({ error: 'Unexpected response format from AI.' });
     }
 
@@ -190,4 +197,4 @@ io.on('connection', (socket) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 8080;
-httpServer.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+httpServer.listen(PORT, () => console.log(`Server listening on port ${httpServer.address().port}`));
