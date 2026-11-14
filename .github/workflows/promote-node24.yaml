@@ -1,0 +1,95 @@
+name: Promote verified Node.js 24 candidate
+on:
+  push:
+    branches: [release/node24-20261114]
+permissions:
+  contents: read
+concurrency:
+  group: app-engine-refs/heads/main
+  cancel-in-progress: false
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      VERSION_ID: node24-43586923752-1
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --engine-strict
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Confirm exact baseline and candidate runtime
+        run: |
+          gcloud app services describe default --format='json(split)' > "$RUNNER_TEMP/traffic-before.json"
+          gcloud app versions describe "$VERSION_ID" --service default --format='json(runtime,envVariables)' > "$RUNNER_TEMP/candidate.json"
+          gcloud app versions describe 20260426t102513 --service default --format='json(runtime,envVariables)' > "$RUNNER_TEMP/baseline.json"
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const read = name => JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/' + name));
+          assert.deepEqual(read('traffic-before.json').split.allocations, {'20260426t102513':1});
+          const candidate=read('candidate.json'), baseline=read('baseline.json');
+          assert.equal(candidate.runtime,'nodejs24');
+          assert.ok(candidate.envVariables.OPENAI_API_KEY);
+          assert.equal(candidate.envVariables.OPENAI_API_KEY,baseline.envVariables.OPENAI_API_KEY);
+          console.log('Exact baseline, Node.js 24 runtime and unchanged AI credential confirmed.');
+          JS
+      - name: Verify documented quota-only exception
+        run: |
+          gcloud logging read 'resource.type="gae_app" AND resource.labels.version_id="node24-43586923752-1" AND textPayload:"OpenAI error:"' --freshness=1h --limit=10 --format=json > "$RUNNER_TEMP/ai-errors.json"
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const entries=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/ai-errors.json'));
+          assert.ok(entries.length>0,'No quota diagnostic evidence found');
+          assert.ok(entries.every(e=>/insufficient_quota|exceeded.*quota|billing/i.test(JSON.stringify(e.textPayload||e.jsonPayload||''))), 'An unexpected AI failure needs investigation');
+          for(const base of ['https://poemgenerator-492211.appspot.com','https://node24-43586923752-1-dot-poemgenerator-492211.nw.r.appspot.com']) {
+            const response=await fetch(base+'/generate-poem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:'A quiet sunrise'}),signal:AbortSignal.timeout(60000)});
+            assert.equal(response.status,500,'AI availability changed; reassess before promotion');
+          }
+          console.log('Known pre-existing AI quota failure confirmed. This one-time runtime promotion does not claim AI generation works.');
+          JS
+      - name: Recheck candidate health and multiplayer
+        env:
+          BASE_URL: https://node24-43586923752-1-dot-poemgenerator-492211.nw.r.appspot.com
+          EXPECTED_VERSION: ${{ env.VERSION_ID }}
+          RUN_AI: '0'
+        run: node scripts/smoke-live.js
+      - name: Ensure traffic is still unchanged
+        run: |
+          gcloud app services describe default --format='json(split)' > "$RUNNER_TEMP/traffic-now.json"
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const read = name => JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/'+name)).split;
+          assert.deepEqual(read('traffic-now.json'),read('traffic-before.json'));
+          JS
+      - name: Promote verified version
+        id: promote
+        run: gcloud app services set-traffic default --splits "$VERSION_ID=1" --quiet
+      - name: Verify production health and multiplayer
+        env:
+          BASE_URL: https://poemgenerator-492211.appspot.com
+          EXPECTED_VERSION: ${{ env.VERSION_ID }}
+          RUN_AI: '0'
+        run: node scripts/smoke-live.js
+      - name: Roll back on promotion or production-check failure
+        if: failure() && steps.promote.outcome != 'skipped'
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const {split}=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/traffic-before.json'));
+          const allocations=Object.entries(split.allocations).map(([v,w])=>v+'='+w).join(',');
+          if(!allocations)throw new Error('Missing rollback allocation');
+          execFileSync('gcloud',['app','services','set-traffic','default','--splits',allocations,'--split-by',(split.shardBy||'IP').toLowerCase(),'--quiet'],{stdio:'inherit'});
+          JS
+      - name: Report final traffic
+        if: always()
+        run: gcloud app services describe default --format='json(split)'
